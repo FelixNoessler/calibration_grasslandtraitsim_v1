@@ -272,82 +272,81 @@ Calibration script
 <p>The calibration was done using the following script:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="bu">GrasslandTraitSim</span> as sim</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">ProtoStructs</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Accessors</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Unitful</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">UnPack</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Metaheuristics</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DimensionalData</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Statistics</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Distributions</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JMcDM</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="bu">Dates</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">PairPlots</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">PrettyTables</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">includet</span>(<span class="st">"0_error_functions.jl"</span>)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">includet</span>(<span class="st">"0_calibration_object.jl"</span>)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">includet</span>(<span class="st">"0_logger_plots.jl"</span>)</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">run_optimization</span>(opt_obj, function_calls <span class="op">=</span> <span class="fl">200</span>, time_limit_seconds <span class="op">=</span> <span class="cn">Inf</span>;</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>                          X0 <span class="op">=</span> <span class="cn">nothing</span>, tmp_location <span class="op">=</span> <span class="st">""</span>)</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    bounds <span class="op">=</span> <span class="fu">BoxConstrainedSpace</span>(lb <span class="op">=</span> opt_obj.lb, ub <span class="op">=</span> opt_obj.ub)</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    options <span class="op">=</span> <span class="fu">Options</span>(f_calls_limit <span class="op">=</span> function_calls,</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>                      time_limit <span class="op">=</span> <span class="fu">float</span>(time_limit_seconds),</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>                      parallel_evaluation <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>                      store_convergence <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                      verbose <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>                      iterations <span class="op">=</span> <span class="fl">5000</span>);</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> <span class="fu">f</span>(x)</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>        fx <span class="op">=</span> <span class="fu">total_error</span>(opt_obj, x)</span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fx, [<span class="fl">0.0</span>], [<span class="fl">0.0</span>]</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> <span class="fu">f_parallel</span>(X)</span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>        N <span class="op">=</span> <span class="fu">size</span>(X,<span class="fl">1</span>)</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>        nobjectives <span class="op">=</span> <span class="fl">7</span></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>        fx, gx, hx <span class="op">=</span> <span class="fu">zeros</span>(N,nobjectives), <span class="fu">zeros</span>(N,<span class="fl">1</span>), <span class="fu">zeros</span>(N,<span class="fl">1</span>)</span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Threads</span>.<span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span>N</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>            fx[i,<span class="op">:</span>], gx[i,<span class="op">:</span>], hx[i,<span class="op">:</span>] <span class="op">=</span> <span class="fu">f</span>(X[i,<span class="op">:</span>])</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>        fx, gx, hx</span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    algo <span class="op">=</span> <span class="fu">NSGA2</span>(; options, N <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fu">length</span>(opt_obj.lb))</span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> !<span class="fu">isnothing</span>(X0)</span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>        <span class="fu">set_user_solutions!</span>(algo, X0, f);</span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logger</span>(st) <span class="op">=</span> <span class="cf">begin</span></span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="fu">iszero</span>(st.iteration <span class="op">%</span> <span class="fl">5</span>)</span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>            p <span class="op">=</span> <span class="fu">solution</span>(st, opt_obj)</span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>            <span class="fu">print</span>(p)</span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>            iteration_str <span class="op">=</span> <span class="fu">lpad</span>(st.iteration, <span class="fl">4</span>, <span class="st">"0"</span>)</span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>            <span class="fu">calibration_logplot</span>(p, opt_obj, [<span class="op">:</span>HEG05, <span class="op">:</span>HEG06], tmp_location,</span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>                                iteration <span class="op">=</span> iteration_str)</span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>            <span class="fu">standing_biomass_mowing</span>(p, opt_obj, <span class="op">:</span>HEG05, tmp_location; iteration <span class="op">=</span> iteration_str)</span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>            <span class="fu">jldsave</span>(<span class="st">"</span><span class="sc">$</span>tmp_location<span class="st">/opt_</span><span class="sc">$</span>iteration_str<span class="st">.jld2"</span>; opt<span class="op">=</span>st)</span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>    <span class="fu">optimize</span>(f_parallel, bounds, <span class="fu">Restart</span>(algo, every<span class="op">=</span><span class="fl">200</span>); logger)</span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>out_dir <span class="op">=</span> <span class="st">"calibration_results/test"</span></span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a><span class="fu">mkpath</span>(out_dir)</span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a><span class="fu">mkpath</span>(<span class="st">"</span><span class="sc">$</span>out_dir<span class="st">/calibration_tmp"</span>)</span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>be_opt <span class="op">=</span> <span class="fu">BE_optimization</span>(;);</span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a><span class="pp">@info</span> <span class="st">"Start with the calibration"</span></span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>opt <span class="op">=</span> <span class="fu">run_optimization</span>(be_opt, <span class="fl">1.0e20</span>, <span class="fl">10</span> <span class="op">*</span> <span class="fl">60</span>;</span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>                       tmp_location <span class="op">=</span> <span class="st">"</span><span class="sc">$</span>out_dir<span class="st">/calibration_tmp"</span>)</span>
-<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="fu">jldsave</span>(<span class="st">"</span><span class="sc">$</span>out_dir<span class="st">/opt.jld2"</span>; opt)</span>
-<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a><span class="pp">@info</span> <span class="st">"Saved optimization in </span><span class="sc">$</span>out_dir<span class="st">"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Accessors</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Unitful</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">UnPack</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Metaheuristics</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DimensionalData</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Statistics</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Distributions</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JMcDM</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="bu">Dates</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">PairPlots</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">PrettyTables</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">includet</span>(<span class="st">"0_error_functions.jl"</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">includet</span>(<span class="st">"0_calibration_object.jl"</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">includet</span>(<span class="st">"0_logger_plots.jl"</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">run_optimization</span>(opt_obj, function_calls <span class="op">=</span> <span class="fl">200</span>, time_limit_seconds <span class="op">=</span> <span class="cn">Inf</span>;</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>                          X0 <span class="op">=</span> <span class="cn">nothing</span>, tmp_location <span class="op">=</span> <span class="st">""</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    bounds <span class="op">=</span> <span class="fu">BoxConstrainedSpace</span>(lb <span class="op">=</span> opt_obj.lb, ub <span class="op">=</span> opt_obj.ub)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    options <span class="op">=</span> <span class="fu">Options</span>(f_calls_limit <span class="op">=</span> function_calls,</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>                      time_limit <span class="op">=</span> <span class="fu">float</span>(time_limit_seconds),</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>                      parallel_evaluation <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>                      store_convergence <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>                      verbose <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                      iterations <span class="op">=</span> <span class="fl">5000</span>);</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> <span class="fu">f</span>(x)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>        fx <span class="op">=</span> <span class="fu">total_error</span>(opt_obj, x)</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fx, [<span class="fl">0.0</span>], [<span class="fl">0.0</span>]</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> <span class="fu">f_parallel</span>(X)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>        N <span class="op">=</span> <span class="fu">size</span>(X,<span class="fl">1</span>)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>        nobjectives <span class="op">=</span> <span class="fl">7</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>        fx, gx, hx <span class="op">=</span> <span class="fu">zeros</span>(N,nobjectives), <span class="fu">zeros</span>(N,<span class="fl">1</span>), <span class="fu">zeros</span>(N,<span class="fl">1</span>)</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Threads</span>.<span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span>N</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>            fx[i,<span class="op">:</span>], gx[i,<span class="op">:</span>], hx[i,<span class="op">:</span>] <span class="op">=</span> <span class="fu">f</span>(X[i,<span class="op">:</span>])</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>        fx, gx, hx</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    algo <span class="op">=</span> <span class="fu">NSGA2</span>(; options, N <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fu">length</span>(opt_obj.lb))</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> !<span class="fu">isnothing</span>(X0)</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>        <span class="fu">set_user_solutions!</span>(algo, X0, f);</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logger</span>(st) <span class="op">=</span> <span class="cf">begin</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="fu">iszero</span>(st.iteration <span class="op">%</span> <span class="fl">5</span>)</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>            p <span class="op">=</span> <span class="fu">solution</span>(st, opt_obj)</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>            <span class="fu">print</span>(p)</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>            iteration_str <span class="op">=</span> <span class="fu">lpad</span>(st.iteration, <span class="fl">4</span>, <span class="st">"0"</span>)</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>            <span class="fu">calibration_logplot</span>(p, opt_obj, [<span class="op">:</span>HEG05, <span class="op">:</span>HEG06], tmp_location,</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>                                iteration <span class="op">=</span> iteration_str)</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>            <span class="fu">standing_biomass_mowing</span>(p, opt_obj, <span class="op">:</span>HEG05, tmp_location; iteration <span class="op">=</span> iteration_str)</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>            <span class="fu">jldsave</span>(<span class="st">"</span><span class="sc">$</span>tmp_location<span class="st">/opt_</span><span class="sc">$</span>iteration_str<span class="st">.jld2"</span>; opt<span class="op">=</span>st)</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>    <span class="fu">optimize</span>(f_parallel, bounds, <span class="fu">Restart</span>(algo, every<span class="op">=</span><span class="fl">200</span>); logger)</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>out_dir <span class="op">=</span> <span class="st">"calibration_results/test"</span></span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a><span class="fu">mkpath</span>(out_dir)</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a><span class="fu">mkpath</span>(<span class="st">"</span><span class="sc">$</span>out_dir<span class="st">/calibration_tmp"</span>)</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>be_opt <span class="op">=</span> <span class="fu">BE_optimization</span>(;);</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a><span class="pp">@info</span> <span class="st">"Start with the calibration"</span></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>opt <span class="op">=</span> <span class="fu">run_optimization</span>(be_opt, <span class="fl">1.0e20</span>, <span class="fl">10</span> <span class="op">*</span> <span class="fl">60</span>;</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>                       tmp_location <span class="op">=</span> <span class="st">"</span><span class="sc">$</span>out_dir<span class="st">/calibration_tmp"</span>)</span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a><span class="fu">jldsave</span>(<span class="st">"</span><span class="sc">$</span>out_dir<span class="st">/opt.jld2"</span>; opt)</span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="pp">@info</span> <span class="st">"Saved optimization in </span><span class="sc">$</span>out_dir<span class="st">"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
