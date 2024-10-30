@@ -1,6 +1,5 @@
 /.quarto/
 /_site/
-/docs/
 *.ipynb
 /*.html
 site_libs/
