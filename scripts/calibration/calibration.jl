@@ -1,6 +1,5 @@
 import GrasslandTraitSim as sim
 
-using ProtoStructs
 using Accessors
 using Unitful
 using UnPack

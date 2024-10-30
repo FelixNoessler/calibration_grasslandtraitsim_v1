@@ -1,11 +1,13 @@
 function plot_two_site_paper(p, opt_obj, site_index, dir)
     @unpack trait_input, parameter_names, input_data, measurement_data = opt_obj
 
-    ax_settings_left = (; width = 400, height = 150,
-                        xticks = 2006:4:2022, xminorticks = 2006:1:2022,
-                        topspinevisible = true,
-                        rightspinevisible = true,
-                        limits = (2004.5, 2023.5, nothing, nothing))
+    ax_settings = (; width = 400, height = 150,
+                    xticks = 2006:4:2022, xminorticks = 2006:1:2022,
+                    topspinevisible = true,
+                    rightspinevisible = true,
+                    xgridvisible = false,
+                    ygridvisible = false,
+                    limits = (2004.5, 2023.5, nothing, nothing))
 
     fig = Figure()
 
@@ -24,16 +26,16 @@ function plot_two_site_paper(p, opt_obj, site_index, dir)
         measured_cut_biomass = vec(data.biomass)
 
         ax = Axis(fig[1, s];
-            ylabel = s == 1 ? "Total aboveground\nbiomass [kg ha⁻¹]" : "",
+            ylabel = s == 1 ? "Cut biomass &\ntotal aboveground\nbiomass [kg ha⁻¹]" : "",
             yticklabelsvisible = s == 1 ? true : false,
             yticksvisible = s == 1 ? true : false,
             xlabel = "",
             xticklabelsvisible = false,
             xticksvisible = false,
-            ax_settings_left...)
+            ax_settings...)
 
         push!(biomass_ax, ax)
-        lines!(sol.simp.output_date_num, vec(ustrip.(total_biomass)))
+        lines!(sol.simp.output_date_num, vec(ustrip.(total_biomass)), linewidth = 2)
         scatter!(biomass_date, simulated_cut_biomass)
         scatter!(biomass_date, measured_cut_biomass; color = :black)
         Label(fig[1, s], "$(Int(round(errors[1]; digits = 0)))";
@@ -41,17 +43,15 @@ function plot_two_site_paper(p, opt_obj, site_index, dir)
             halign = :right, valign = :top)
 
         ##### traits
-        trait_symbols = [:rsa, :abp, :sla, :maxheight, :amc, :lnc]
+        trait_symbols = [:maxheight, :sla, :lnc, :abp, :rsa, :amc]
         trait_strings = [
+            "Maximum height [m]",
+            "Specific\nleaf area [m² g⁻¹]",
+            "Leaf nitrogen per\nleaf mass [mg g⁻¹]",
+            "Aboveground biomass\nper total biomass [-]",
             "Root surface area\nper belowground \nbiomass [m² g⁻¹]",
-            "Aboveground\nbiomass per\ntotal biomass [-]",
-            "Specific leaf\narea [m² g⁻¹]",
-            "Maximum\nheight [m]",
             "Arbuscular\nmycorrhizal\ncolonisation [-]",
-            "Leaf nitrogen per\nleaf mass [mg g⁻¹]"
         ]
-        my_yticks = [0.1:0.1:0.3, 0.5:0.1:0.7, 0.005:0.005:0.015,
-        0.25:0.25:1.25, 0.2:0.2:0.6, 10:10:40]
 
         trait_labels = (; zip(trait_symbols, trait_strings)...)
 
@@ -91,7 +91,7 @@ function plot_two_site_paper(p, opt_obj, site_index, dir)
 
             Axis(fig[1+i, s];
                 ylabel = s == 1 ? trait_labels[trait_symbol] : "",
-                yticks = my_yticks[i],
+                yticks = Makie.LinearTicks(4),
                 yticklabelsvisible = s == 1 ? true : false,
                 yticksvisible = s == 1 ? true : false,
                 xlabel = i == 6 ? "Time [year]" : "",
@@ -99,10 +99,10 @@ function plot_two_site_paper(p, opt_obj, site_index, dir)
                 xticksvisible = i == 6 ? true : false,
                 xticklabelsvisible = i == 6 ? true : false,
                 xminorticksvisible = i == 6 ? true : false,
-                ax_settings_left...)
+                ax_settings...)
             hlines!(input_trait_vals; color = (:black, 0.07))
 
-            lines!(sol.simp.output_date_num, sim_cwm_trait_all)
+            lines!(sol.simp.output_date_num, sim_cwm_trait_all, linewidth = 2)
             scatter!(to_numeric.(data.fun_diversity.date), measured_cwm; color = :black)
 
             trait_err_digits = i == 6 ? 1 : 3

@@ -21,8 +21,8 @@ website:
         contents:
         - text: Overview
           href: calibration_results_overview.qmd
-        - text: Sites
-          href: calibration_results_sites.qmd
+        - text: Plots
+          href: calibration_results_plots.qmd
         - text: Patterns
           href: calibration_results_patterns.qmd
         - href: calibration_results_scenario.qmd

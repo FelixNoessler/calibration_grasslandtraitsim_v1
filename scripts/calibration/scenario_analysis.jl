@@ -168,7 +168,7 @@ function scenario_results(sol, trait_matrix)
     push!(results, eve)
 
     ### community weighted mean traits
-    traits = [:rsa, :abp, :sla, :maxheight, :amc, :lnc]
+    traits = [:maxheight, :sla, :lnc, :abp, :rsa, :amc]
 
     for i in eachindex(traits)
         trait_vals = sol.traits[traits[i]]
@@ -209,8 +209,8 @@ end
 
 begin
     axes_labels = [
-        "Aboveground\nbiomass\n[kg ha⁻¹]",
-        "Belowground\nbiomass\n[kg ha⁻¹]",
+        "Aboveground\nbiomass [kg ha⁻¹]",
+        "Belowground\nbiomass [kg ha⁻¹]",
         "Yearly grazed or\nmown biomass\n[kg ha⁻¹]",
         "Height [m]",
         "Functional\ndispersion [-]",
@@ -219,19 +219,19 @@ begin
 
     first_ax = 1
     last_ax = 6
-    my_yticks = [[1500, 2000, 2500], [4000, 5000, 6000], [2500, 5000], 0.1:0.2:0.5, 0:2, 0:2]
+
     fig = Figure(;)
 
     myaxes = []
     for t in first_ax:last_ax
         ax = Axis(fig[t, 1]; xticksvisible = t == last_ax ? true : false,
-                  xticklabelsvisible = t == last_ax ? true : false,
-                #   yticks = (my_yticks[t], string.(my_yticks[t])),
-                  width = 400, height = 150,
-                  xticks = 1:5,
-                  ylabel = axes_labels[t],
-                  xlabel = t == last_ax ? "Number of mowing events per year [-]" : "",
-                  limits = (0.5, 5.5, nothing, nothing))
+            xticklabelsvisible = t == last_ax ? true : false,
+            yticks = Makie.LinearTicks(4),
+            width = 400, height = 150,
+            xticks = 1:5,
+            ylabel = axes_labels[t],
+            xlabel = t == last_ax ? "Number of mowing events per year [-]" : "",
+            limits = (0.5, 5.5, nothing, nothing))
         push!(myaxes, ax)
         m = vec(mean(result_mowing[t, :, :]; dims = 2))
         for p in eachindex(plotIDs)
@@ -245,16 +245,17 @@ begin
 
     for t in first_ax:last_ax
         ax = Axis(fig[t, 2];
-                  yticklabelsvisible = false, yticksvisible = false,
-                  rightspinevisible = true,
-                  width = 400, height = 150,
-                  xticksvisible = t == last_ax ? true : false,
-                  xticklabelsvisible = t == last_ax ? true : false,
-                  xticks = 1:4,
-                  xminorticks = 0.5:0.5:4.0,
-                  xminorticksvisible = t == last_ax ? true : false,
-                  xlabel = t == last_ax ? "Grazing intensity May-August [LD ha⁻¹ d⁻¹]" : "",
-                  limits = (0.2, 4.5, nothing, nothing))
+            yticklabelsvisible = false, yticksvisible = false,
+            rightspinevisible = true,
+            width = 400, height = 150,
+            yticks = Makie.LinearTicks(4),
+            xticksvisible = t == last_ax ? true : false,
+            xticklabelsvisible = t == last_ax ? true : false,
+            xticks = 1:4,
+            xminorticks = 0.5:0.5:4.0,
+            xminorticksvisible = t == last_ax ? true : false,
+            xlabel = t == last_ax ? "Grazing intensity May-August [LD ha⁻¹ d⁻¹]" : "",
+            limits = (0.2, 4.5, nothing, nothing))
 
         graz_int = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
         m = vec(mean(result_grazing[t, :, :]; dims = 2))
@@ -284,28 +285,26 @@ begin
 end
 
 begin
-    traits = [:rsa, :abp, :sla, :maxheight, :amc, :lnc]
+    traits = [:maxheight, :sla, :lnc, :abp, :rsa, :amc]
     axes_labels = [
-        "Root surface area\nper belowground\nbiomass [m² g⁻¹]",
-        "Aboveground\nbiomass per\ntotal biomass [-]",
-        "Specific leaf\narea [m² g⁻¹]",
         "Maximum\nheight [m]",
+        "Specific leaf\narea [m² g⁻¹]",
+        "Leaf nitrogen\nper leaf mass [mg g⁻¹]",
+        "Aboveground\nbiomass per\ntotal biomass [-]",
+        "Root surface area\nper belowground\nbiomass [m² g⁻¹]",
         "Arbuscular\nmycorrhizal\ncolonisation [-]",
-        "Leaf nitrogen\nper leaf mass\n[mg g⁻¹]"
     ]
 
     first_ax = 1
     last_ax = 6
 
-    my_yticks = [[0.16, 0.2, 0.24], [0.575, 0.6, 0.625], [0.014, 0.016, 0.018],
-                    [0.2, 0.4, 0.6], 0.2:0.1:0.6, [22, 26, 30]]
     fig = Figure(;)
 
     myaxes = []
     for t in first_ax:last_ax
         ax = Axis(fig[t, 1]; xticksvisible = t == last_ax ? true : false,
                   xticklabelsvisible = t == last_ax ? true : false,
-                #   yticks = (my_yticks[t], string.(my_yticks[t])),
+                  yticks = Makie.LinearTicks(4),
                   width = 400, height = 150,
                   xticks = 1:5,
                   ylabel = axes_labels[t],
