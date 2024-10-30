@@ -1,0 +1,34 @@
+---
+title: "Technical details on the calibration"
+bibliography: lit.bib
+format:
+    html:
+        page-layout: full
+        code-fold: true
+---
+
+We use multiobjective optimization to calibrate the parameters. The objectives are:
+
+- cut aboveground biomass
+- community weighted mean trais (specific leaf area, maximum height, )
+
+We use NSGA-II: Non-dominated Sorting Genetic Algorithm @Deb2002 as implemented in Metaheuristics.jl @metaheuristics2022.
+
+We weight the objectives 50 % to aboveground biomass and 50 % distributed equally among the community weighted mean traits.
+
+
+::: {.callout-note title="Calibration script" collapse=true}
+The calibration was done using the following script:
+
+```julia
+{{< include scripts/calibration/calibration.jl >}}
+```
+:::
+
+::: {.callout-note title="Validation script" collapse=true}
+The script for creating all graphics:
+
+```julia
+{{< include scripts/calibration/validation.jl >}}
+```
+:::

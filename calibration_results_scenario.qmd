@@ -1,0 +1,64 @@
+---
+title: Scenario analysis
+format:
+    html:
+        code-fold: true
+---
+
+```{=html}
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"></script>
+```
+
+
+```{=html}
+<div class="dropdown show">
+    <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Select a site
+    </a>
+
+<div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG05.png">05</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG06.png">06</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG10.png">10</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG11.png">11</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG13.png">13</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG14.png">14</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG26.png">26</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG28.png">28</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG29.png">29</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG34.png">34</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG47.png">47</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG48.png">48</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG49.png">49</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG50.png">50</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG01.png">01</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG02.png">02</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG03.png">03</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG04.png">04</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG15.png">15</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG22.png">22</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG23.png">23</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG24.png">24</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG27.png">27</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG30.png">30</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG31.png">31</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG32.png">32</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG33.png">33</a>
+    <a class="dropdown-item dropdown-scenario" href="#" data-image="img/scenario/HEG37.png">37</a>
+</div>
+</div>
+
+<br>
+<img src="img/scenario/HEG05.png" rel="popover" alt="" class ="scenario-img" style="max-width: 500px">
+```
+
+```{=html}
+<script>
+$(".dropdown-scenario").click(function() {
+    const image_location = $(this).data("image");
+    $(".scenario-img").attr("src", image_location);
+});
+</script>
+```

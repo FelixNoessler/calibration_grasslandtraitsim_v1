@@ -1,0 +1,40 @@
+---
+title: "Fixed parameter"
+bibliography: lit.bib
+engine: julia
+format:
+    html:
+        code-fold: true
+---
+
+## References
+
+| Parameter    | Value       | Unit               | Reference        |
+| ------------ | ----------- | ------------------ | ---------------- |
+| $RUE_{\max}$ | 0.003       | $kg \cdot MJ^{-1}$ | @Schapendonk1998 |
+| $k$          | 0.6         | $-$                | @Schapendonk1998 |
+| $\gamma_1$   | 4.45 ⋅ 10⁻⁶ | $MJ^{-1}\cdot ha$  | @Schapendonk1998 |
+| $\gamma_2$   | 5 ⋅ 10⁴     | $MJ^{-1}\cdot ha$  | @Schapendonk1998 |
+| $T_0$        | 4           | $°C$               | @Jouven2006      |
+| $T_1$        | 10          | $°C$               | @Jouven2006      |
+| $T_2$        | 20          | $°C$               | @Jouven2006      |
+| $T_3$        | 35          | $°C$               | @Jouven2006      |
+| $ST_1$       | 775         | $°C$               | @Jouven2006      |
+| $ST_2$       | 1450        | $°C$               | @Jouven2006      |
+| $\Psi_1$     | 775         | $°C$               | @moulin2021      |
+| $\Psi_2$     | 3000        | $°C$               | @moulin2021      |
+| $\kappa$     | 22          | $kg \cdot d^{-1}$  | @gillet_08       |
+| $N_{\max}$   | 35          | $g \cdot kg^{-1}$  | fixed by me      |
+
+: Fixed parameters and the references for their values {tbl-colwidths="[10,30,60"]}
+
+## Read from the calibration object
+```{julia}
+using PrettyTables
+
+include("scripts/calibration/0_calibration_object.jl")
+be_opt = BE_optimization()
+
+pretty_table(HTML, [String.(collect(keys(be_opt.fixed_parameter))) collect(be_opt.fixed_parameter)]; 
+             header = ["Parameter", "Value"])
+```

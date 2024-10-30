@@ -1,0 +1,183 @@
+creation date: '2023-08-28T10:00:34.207273'
+tubedb version: 1.23.1
+region:
+  id: BE
+  name: Exploratories
+groups:
+- id: AEG
+  name: Schwäbische Alb Grünland
+- id: HEG
+  name: Hainich-Dün Grünland
+- id: SEG
+  name: Schorfheide Grünland
+plots:
+- AEG01
+- AEG02
+- AEG03
+- AEG04
+- AEG05
+- AEG06
+- AEG07
+- AEG08
+- AEG09
+- AEG10
+- AEG11
+- AEG12
+- AEG13
+- AEG14
+- AEG15
+- AEG16
+- AEG17
+- AEG18
+- AEG19
+- AEG20
+- AEG21
+- AEG22
+- AEG23
+- AEG24
+- AEG25
+- AEG26
+- AEG27
+- AEG28
+- AEG29
+- AEG30
+- AEG31
+- AEG32
+- AEG33
+- AEG34
+- AEG35
+- AEG36
+- AEG37
+- AEG38
+- AEG39
+- AEG40
+- AEG41
+- AEG42
+- AEG43
+- AEG44
+- AEG45
+- AEG46
+- AEG47
+- AEG48
+- AEG49
+- AEG50
+- HEG01
+- HEG02
+- HEG03
+- HEG04
+- HEG05
+- HEG06
+- HEG07
+- HEG08
+- HEG09
+- HEG10
+- HEG11
+- HEG12
+- HEG13
+- HEG14
+- HEG15
+- HEG16
+- HEG17
+- HEG18
+- HEG19
+- HEG20
+- HEG21
+- HEG22
+- HEG23
+- HEG24
+- HEG25
+- HEG26
+- HEG27
+- HEG28
+- HEG29
+- HEG30
+- HEG31
+- HEG32
+- HEG33
+- HEG34
+- HEG35
+- HEG36
+- HEG37
+- HEG38
+- HEG39
+- HEG40
+- HEG41
+- HEG42
+- HEG43
+- HEG44
+- HEG45
+- HEG46
+- HEG47
+- HEG48
+- HEG49
+- HEG50
+- SEG01
+- SEG02
+- SEG03
+- SEG04
+- SEG05
+- SEG06
+- SEG07
+- SEG08
+- SEG09
+- SEG10
+- SEG11
+- SEG12
+- SEG13
+- SEG14
+- SEG15
+- SEG16
+- SEG17
+- SEG18
+- SEG19
+- SEG20
+- SEG21
+- SEG22
+- SEG23
+- SEG24
+- SEG25
+- SEG26
+- SEG27
+- SEG28
+- SEG29
+- SEG30
+- SEG31
+- SEG32
+- SEG33
+- SEG34
+- SEG35
+- SEG36
+- SEG37
+- SEG38
+- SEG39
+- SEG40
+- SEG41
+- SEG42
+- SEG43
+- SEG44
+- SEG45
+- SEG46
+- SEG47
+- SEG48
+- SEG49
+- SEG50
+sensors:
+- P_RT_NRT
+- precipitation_radolan
+- Ta_200
+time interval:
+  start: '*'
+  end: '*'
+aggregation: day
+quality check: empirical
+interpolation: true
+data columns:
+- plotID
+- datetime
+- qualitycounter
+data header: true
+all plots in one file: plots.csv
+additional files:
+- sensor_description.csv
+- plot_description.csv
+- processing_settings.yaml

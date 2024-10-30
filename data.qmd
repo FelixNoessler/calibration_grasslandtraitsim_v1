@@ -1,0 +1,415 @@
+---
+title: "Data of the Biodiversity Exploratories"
+bibliography: lit.bib
+engine: julia
+format:
+    html:
+        code-fold: true
+---
+
+## Where to get the data
+
+The data from the Biodiversity Exploraties can be downloaded from the [BExIS data base](https://www.bexis.uni-jena.de/ddm/publicsearch/index). Also the metadata for all datasets is available there. 
+
+::: {.callout-note title="Script for downloading all data sets from BExIS" collapse=true}
+The following R-script downloads all data sets from the Biodiversity Exploratories data base:
+```{.r filename="download_bexis.R"}
+{{< include scripts/data_preprocessing/download_bexis.R >}}
+```
+:::
+
+::: {.callout-note title="Script for downloading PET data from DWD" collapse=true}
+The following script downloads files for the potential evapotranspiration from the DWD:
+```{.julia filename="download_pet.jl"}
+{{< include scripts/data_preprocessing/download_pet.jl >}}
+```
+:::
+
+::: {.callout-note title="Processing PAR data from Google Earth Engine" collapse=true}
+The photosynthetic active radiation was processed with the following script on Google Earth Engine:
+```{.js filename="par_extract.js"}
+{{< include scripts/data_preprocessing/par_extract.js >}}
+```
+:::
+
+::: {.callout-note title="Script for downloading temperature and precipitation data from DWD" collapse=true}
+The following script downloads files for the potential evapotranspiration from the DWD:
+```{.julia filename="download_temperature_precipitation_dwd.jl"}
+{{< include scripts/data_preprocessing/download_temperature_precipitation_dwd.jl >}}
+```
+:::
+
+::: {.callout-note title="How to download temperature and precipitation data from BExIS" collapse=true}
+The data can be manually downloaded from the BExIS data base with the [climate tool](https://www.bexis.uni-jena.de/TCD/PublicClimateData/export), see @explo19007v6.
+
+The following yaml file shows which options were used for downloading:
+```{.yaml filename="temperature_precipitation_processing_settings.yaml"}
+{{< include scripts/data_preprocessing/temperature_precipitation_processing_settings.yaml >}}
+```
+:::
+
+::: {.callout-note title="Data sources for the species traits" collapse=true}
+Parts of the traits data were download from BExIS from traits that were measured from plants in the field (specific leaf area, @explo24807v2) or in lab conditions (belowground traits, aboveground biomass per total biomass, @explo26546v2). The potential plant height was taken from the LEDA trait database (@LEDA). The leaf nitrogen content was downloaded from the TRY database (@trydb).
+:::
+
+
+## Input data
+
+
+### Traits of species
+
+| Description                                      | Data source       |
+| ------------------------------------------------ | ----------------- |
+| Specific leaf area [m² g⁻¹]                      | @explo24807v2     |
+| Arbuscular mycorrhizal colonisation [-]          | @explo26546v2     |
+| Root surface area / aboveground biomass [m² g⁻¹] | @explo26546v2     |
+| Above ground biomass per total biomass (abp) [-] | @explo26546v2     |
+| The leaf biomass per aboveground biomass [-]     | set to 0.8 of abp |
+| Potential plant height [m]                       | @LEDA             |
+| Leaf nitrogen / leaf mass [mg g⁻¹]               | @trydb            |
+
+: {tbl-colwidths="[60,40]"}
+
+
+
+::: {.callout-note title="Details on getting the species traits" collapse=true}
+The species traits were processed with the following script:
+```{.julia filename="1_input_traits.jl"}
+{{< include scripts/data_preprocessing/traits/1_input_traits.jl >}}
+```
+
+The functions for loading the trait data are described in the following script:
+```{.julia filename="0_functions_load_traits.jl"}
+{{< include scripts/data_preprocessing/traits/0_functions_load_traits.jl >}}
+```
+:::
+
+```{julia}
+import GrasslandTraitSim as sim
+import Dates
+using PairPlots
+using DataFrames, DataFramesMeta
+using Statistics
+using CairoMakie
+
+traits = sim.input_traits()
+df = DataFrame(traits)
+
+pairplot( 
+    df => (
+        PairPlots.Scatter(color = (:blue, 0.5), markersize = 7), 
+        PairPlots.Correlation(; digits = 2, position=PairPlots.Makie.Point2f(0.2, 1.0)),
+        PairPlots.MarginDensity(),
+        PairPlots.MarginHist(color = (:black, 0.2)),
+        PairPlots.MarginConfidenceLimits()))
+```
+
+### Daily abiotic conditions
+
+For the first years from 2006 - 2008 no measurement directly from the sites were available. Therefore, the data was downloaded from the German Weather Service (DWD). The closest wheater station for each region (Schorfheife-Chorin, Hainich, Schwäbische Alb) was chosen. From 2009 to 2022, the data was used from the BExIS database mostly with measurements directly from the grassland sites (50 sites per region). 
+
+::: {.callout-note title="Details on loading temperature and precipitation data from DWD" collapse=true}
+The data was processed with the following script:
+```{.julia filename="temperature_precipitation_dwd.jl"}
+{{< include scripts/data_preprocessing/temperature_precipitation_dwd.jl >}}
+```
+:::
+
+::: {.callout-note title="Details on loading temperature and precipitation data from BExIS" collapse=true}
+The data was processed with the following script:
+```{.julia filename="temperature_precipitation_dwd.jl"}
+{{< include scripts/data_preprocessing/temperature_precipitation.jl >}}
+```
+:::
+
+Estimates of the photosynthetically active radiation (PAR) are available with a three hours resolution.
+A quadratic regression was fitted to the data and used to estimate the daily sum of PAR. 
+The daily PAR equals the area under the quadratic regression curve. The spatial resolution
+of the gridded data set is not high enough to describes differences on the plot level,
+therefore the daily PAR values were calculated per region 
+(Exploratories: Schorfheide-Chorin, Hainich, Schwäbische Alb).
+
+::: {.callout-note title="Details on deriving the PAR" collapse=true}
+A quadratic regression was fitted to the data with the following script:
+```{.julia filename="par.jl"}
+{{< include scripts/data_preprocessing/par.jl >}}  
+```
+:::
+
+The potential evapotranspiration (PET) values
+were estimated by the agrometeorological model AMBAV, the VPGB variable 
+("potential evapotranspiration over gras") is used here. Estimates of PET are 
+available for different weather stations in Germany.
+The closest weather station of each Exploratory was chosen to get the daily PET values. 
+
+::: {.callout-note title="Details on loading PET" collapse=true}
+The data was processed with the following script:
+```js
+{{< include scripts/data_preprocessing/pet.jl >}}
+```
+:::
+
+| Variable                 | Description                                       | data source   |
+| ------------------------ | ------------------------------------------------- | ------------- |
+| `temperature[t, plot]`   | Temperature [°C]                                  | @explo19007v6 |
+| `precipitation[t, plot]` | Precipitation [mm d⁻¹]                            | @explo19007v6 |
+| `PAR[t, region]`         | Photosynthetically active radiation [MJ ha⁻¹ d⁻¹] | @PARdata      |
+| `PET[t, region]`         | Potential evapotranspiration [mm d⁻¹]             | @PETdata      |
+
+: {tbl-colwidths="[20,40,40]"}
+
+### Daily management variables
+
+The management data was downloaded from BExIS and the mowing and grazing events were extracted. Exact dates were avaible for mowing. For grazing, only the start month, grazing intensity and the number of days grazed were available.
+
+::: {.callout-note title="Details on mowing" collapse=true}
+The mowing data was processed with the following script:
+
+```julia
+{{< include scripts/data_preprocessing/mowing.jl >}}
+```
+:::
+
+::: {.callout-note title="Details on grazing" collapse=true}
+The grazing data was processed with the following script:
+
+```julia
+{{< include scripts/data_preprocessing/grazing.jl >}}
+```
+:::
+
+| Variable     | Description                                                                     | data source     |
+| ------------ | ------------------------------------------------------------------------------- | --------------- |
+| `CUT_mowing` | Height of mowing event, `NaN` means no mowing [m]                               | @explo_31715_v9 |
+| `LD_grazing` | Grazing intensity measured in livestock units, `NaN` means no grazing [LD ha⁻¹] | @explo_31715_v9 |
+
+: {tbl-colwidths="[20,40,40]"}
+
+```{julia}
+df_mow = @chain sim.data.input.mow begin
+    @subset startswith.(:plotID, "H")
+    @groupby :plotID
+    @combine :mowing = round(mean(:TotalMowing); digits = 1)
+    @orderby :plotID
+end
+
+df_graz = @chain sim.data.input.graz begin
+    @subset startswith.(:plotID, "H")
+    @rtransform :graz1 = ismissing(:end_graz1 - :start_graz1) ? 0.0 : :inten_graz1 * Dates.value.(:end_graz1 - :start_graz1)
+    # @rtransform :graz2 = ismissing(:end_graz2 - :start_graz2) ? 0.0 : :inten_graz2 * Dates.value.(:end_graz2 - :start_graz2)
+    # @rtransform :graz3 = ismissing(:end_graz3 - :start_graz3) ? 0.0 : :inten_graz3 * Dates.value.(:end_graz3 - :start_graz3)
+    # @rtransform :graz4 = ismissing(:end_graz4 - :start_graz4) ? 0.0 : :inten_graz4 * Dates.value.(:end_graz4 - :start_graz4)
+    @transform :total_grazed = :graz1 #+ :graz2 + :graz3 + :graz4
+    @groupby :plotID
+    @combine :grazing = round(mean(:total_grazed); digits = 1)
+    @orderby :plotID
+end
+
+
+let
+    fig = Figure(; size = (500, 800))
+    stem(fig[1,1], df_mow.mowing;
+         axis = (; ylabel = "Mean number of mowing events per year [-]",
+                   xticks = 1:5:50),
+         color = :blue)
+    stem(fig[2,1], 1:50, df_graz.grazing;
+         axis = (; xlabel = "plotID", ylabel = "Mean grazing intensity per year [LD ha⁻¹ d]",
+                   xticks = 1:5:50),
+         color = :red)
+    rowgap!(fig.layout, 1, 0)
+    fig
+end
+```
+
+
+### Raw time invariant site variables
+The texture classes of @explo14686v10 were partly collapsed:
+`Fine_Silt`, `Medium_Silt`, `Coarse_Silt` to `silt` and
+`Fine_Sand`, `Medium_Sand`, `Coarse_Sand` to `sand`.
+
+| Variable    | Description                                 | Data source    |
+| ----------- | ------------------------------------------- | -------------- |
+| `sand`      | Sand content [%]                            | @explo14686v10 |
+| `silt`      | Silt content [%]                            | @explo14686v10 |
+| `clay`      | Clay content [%]                            | @explo14686v10 |
+| `rootdepth` | Mean rooting depth of plants [mm, orig: cm] | @explo4761v3   |
+| `bulk`      | Bulk density [g cm⁻³]                       | @explo17086v4  |
+| `organic`   | Organic matter content [%]                  | @explo14446v19 |
+| `totalN`    | Total nitrogen [g kg⁻¹]                     | @explo14446v19 @explo18787v6 @explo23846v10 @explo_31210_v13 |
+
+: {tbl-colwidths="[20,40,40]"}
+
+::: {.callout-note title="Details on loading the total nitrogen" collapse=true}
+
+The mean total nitrogen of the years 2011, 2014, 2017 and 2021 was calculated with the following script:
+
+```{.julia filename="soilnutrients.jl"}
+{{< include scripts/data_preprocessing/soilnutrients.jl >}}
+```
+:::
+
+::: {.callout-note title="Details on loading the soil characteristics for WHC and PWP" collapse=true}
+
+Soil characteristics were loaded with the following script:
+
+```{.julia filename="soilwater.jl"}
+{{< include scripts/data_preprocessing/soilwater.jl >}}
+```
+:::
+
+
+### Water holding capacity and permanent wilting point
+
+The procedure for converting soil characteristics to water holding capacity (WHC) and permanent wilting point (PWP) is described by @Gupta1979. These plots show the usable field capacity (uFC), water holding capacity (WHC) and permanent wilting point (PWP) for all sites of the Hainich exploratory.
+
+```{julia}
+import GrasslandTraitSim as sim
+import CSV
+using DataFrames, DataFramesMeta
+using CairoMakie
+using AlgebraOfGraphics
+
+df = CSV.read(sim.assetpath() * "/data/input/soilwater.csv", DataFrame) 
+
+### Estimating Generalized Soil-water Characteristics from Texture
+## Gupta 1979
+m = [-0.04 7.053 10.242 10.070 6.333 -32.120 0.950
+    -0.07 5.678 9.228 9.135 6.103 -26.960 0.959
+    -0.10 5.018 8.548 8.833 4.966 -24.230 0.961
+    -0.20 3.890 7.066 8.408 2.817 -18.780 0.962
+    -0.33 3.075 5.886 8.039 2.208 -14.340 0.962
+    -0.60 2.181 4.557 7.557 2.191 -9.276 0.964
+    -1.0 1.563 3.620 7.154 2.388 -5.759 0.966
+    -2.0 0.932 2.643 6.636 2.717 -2.214 0.967
+    -4.0 0.483 1.943 6.128 2.925 -0.204 0.962
+    -7.0 0.214 1.538 5.908 2.855 1.530 0.954
+    -10.0 0.076 1.334 5.802 2.653 2.145 0.951
+    -15.0 -0.059 1.142 5.766 2.228 2.671 0.947]
+
+gupta_df = DataFrame(m, [:Ψ_bar, :a, :b, :c, :d, :e, :R])
+gupta_df = @chain gupta_df begin
+    @transform :a = :a * 1e-3
+    @transform :b = :b * 1e-3
+    @transform :c = :c * 1e-3
+    @transform :d = :d * 1e-3
+    @transform :e = :e * 1e-2
+    @transform :Ψ_hPa = :Ψ_bar * 1000
+    @rtransform :pF = log10(abs(:Ψ_hPa))
+    @select :pF :Ψ_hPa :Ψ_bar :a :b :c :d :e
+end
+
+@subset gupta_df :Ψ_hPa .== -15000
+
+
+function calc_gupta(; sand, silt, clay, organic, bulk)
+    ps = NamedTuple.(eachrow(gupta_df))
+    θs = fill(NaN, nrow(gupta_df))
+
+    for i in 1:nrow(gupta_df)
+        p = ps[i]
+        θ = p.a * sand + p.b * silt + p.c * clay + p.d * organic + p.e * bulk
+        θs[i] = θ
+    end
+
+    θs[θs .> 1] .= 1
+    θs[θs .< 0] .= 0
+
+    return θs
+end
+
+function calc_specific(; df, hPA)
+    gupta_sub = @chain gupta_df begin
+        @subset :Ψ_hPa .== hPA
+        @select $(Not(r"pF|Ψ"))
+    end
+    p = NamedTuple.(eachrow(gupta_sub))[1]
+    θ = p.a * df.sand + p.b * df.silt + p.c * df.clay + p.d * df.organic + p.e * df.bulk
+
+    return θ .* df.rootdepth
+end
+
+df.WHC = calc_specific(; df, hPA = -70)
+df.PWP = calc_specific(; df, hPA = -15000)
+df.uFC = df.WHC - df.PWP
+@subset! df :explo .== "H"
+
+let
+    fig = Figure(; size = (800, 300))
+    ax1, _ = hist(fig[1,1], df.WHC, axis = (; xlabel = "Water holding capacity [mm]"))
+    ax2, _ = hist(fig[1,2], df.PWP, axis = (; xlabel = "Permanent wilting point [mm]", yticklabelsvisible = false))
+    ax3, _ = hist(fig[1,3], df.uFC, axis = (; xlabel = "Usable field capacity [mm]", yticklabelsvisible = false))
+    linkyaxes!(ax1, ax2, ax3)
+    colgap!(fig.layout, 1, 0)
+    colgap!(fig.layout, 2, 0)
+    fig
+end
+```
+
+
+## Calibration data
+
+### Biomass and vegetation height
+Biomass and vegetation height were measured in the Biodiversity Exploratories once per year. The data was downloaded from BExIS and processed to get the measured biomass and vegetation height.
+
+| Variable                | Description                                                                           | Data source     |
+| ----------------------- | ------------------------------------------------------------------------------------- | -------------- |
+| `biomass[plot, year]`   | Dried aboveground biomass, cut at a height of 4 cm once per year in spring [g m⁻²] |  @explo16209v2 @explo12706v2 @explo14346v3 @explo15588v2 @explo16826v4 @explo19807v4 @explo19809v3 @explo21187v3 @explo23486v4 @explo24166v4 @explo26151v4 @explo27426v5 @explo31180v22 @explo31387v10 |
+| `height[plot, t]` | Measured vegetation height | same as above |
+
+: {tbl-colwidths="[20,30,50]"}
+
+::: {.callout-note title="Details on getting the measured biomass" collapse=true}
+The measured (cut) biomass data was processed with the following script:
+```{.julia}
+{{< include scripts/data_preprocessing/measured_biomass.jl >}}
+```
+:::
+
+::: {.callout-note title="Details on getting the measured vegetation height" collapse=true}
+The measured vegetation height data was processed with the following script:
+```{.julia}
+{{< include scripts/data_preprocessing/measured_veg_height.jl >}}
+```
+:::
+
+
+### Community weighted mean traits
+
+Vegetation data was subsetted to 2009 - 2002. The exact date of the vegetation records is not available in @explo31389v7, therefore the dates of the vegetation sampling were used from the header data sets.
+
+Species mean trait values were calculated from the raw trait data sets.
+
+::: {.callout-note title="Details on calculating the community weighted mean traits" collapse=true}
+The community weighted mean traits were calculated with the following script:
+```{.julia filename="2_cwm_traits.jl"}
+{{< include scripts/data_preprocessing/traits/2_cwm_traits.jl >}}
+```
+
+The functions for loading the trait data are described in the following script:
+```{.julia filename="0_functions_load_traits.jl"}
+{{< include scripts/data_preprocessing/traits/0_functions_load_traits.jl >}}
+```
+:::
+
+| Description                                      | Data source                                             |
+| ------------------------------------------------ | ------------------------------------------------------- |
+| Vegetation records                               | data: @explo31389v7, sampling date: @explo6340v2 @explo13486v2 @explo14326v2 @explo15588v2 @explo16826v4 @explo19807v4 @explo19809v3 @explo21187v3 @explo23486v4 @explo24166v4 @explo26151v4 @explo27426v5 @explo31180v22 @explo31387v10 |
+| Specific leaf area [m² g⁻¹]                      | @explo24807v2                                   |
+| Arbuscular mycorrhizal colonisation [-]          | @explo26546v2                                   |
+| Root surface area / belowground biomass [m² g⁻¹] | @explo26546v2                                   |
+| Potential plant height [m]                       | @LEDA                                           |
+| Leaf nitrogen / leaf mass [mg g⁻¹]               | @trydb                                          |
+| Aboveground biomass / total biomass [-]          | @explo26546v2                                   |
+
+
+Vegetation data set with exact dates was joined with species mean trait values to
+calculate community weighted mean traits for each plot and year.
+
+| Variable                  | Description                                      |
+| ------------------------- | ------------------------------------------------ |
+| `CWM_sla[t, plot]`        | Specific leaf area [m² g⁻¹]                      |
+| `CWM_amc[t, plot]`        | Arbuscular mycorrhizal colonisation [-]          |
+| `CWM_srsa[t, plot]`       | Root surface area / belowground biomass [m² g⁻¹] |
+| `CWM_height[t, plot]`     | Plant height [m]                                 |
+| `CWM_lnc[t, plot]`        | Leaf nitrogen / leaf mass [mg g⁻¹]               |
+| `CWM_abp[t, plot]`        | Aboveground biomass / total biomass [-]          |

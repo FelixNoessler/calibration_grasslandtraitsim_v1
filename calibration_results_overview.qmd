@@ -1,0 +1,195 @@
+---
+title: "Calibration results - Overview"
+bibliography: lit.bib
+engine: julia
+format:
+    html:
+        page-layout: full
+        code-fold: true
+---
+
+
+```{julia}
+import GrasslandTraitSim as sim
+using Accessors
+using Unitful
+using DimensionalData
+using UnPack
+using Metaheuristics
+using Statistics
+using CairoMakie
+using JMcDM
+import Dates
+using PairPlots
+using DataFrames
+using JLD2
+
+include("scripts/calibration/0_error_functions.jl")
+include("scripts/calibration/0_calibration_object.jl")
+
+be_valid = BE_optimization(all_sites = true)
+
+out_dir = "calibration_results/"
+website_img_dir = "docs/img"
+opt = load("$out_dir/opt.jld2")["opt"];
+
+### weighting objectives
+ws = fill(0.5 / 6, 7)
+ws[1] = 0.5
+my_dm = mcdm(opt, ws, TopsisMethod());
+p_optimized = prepare_p(opt.population[my_dm.bestIndex].x, be_valid.parameter_names)
+
+### calculate the mean absolute error for each site
+diff_sites = error_for_sites(be_valid, opt.population[my_dm.bestIndex].x;
+                             calc_all_sites = true)
+
+set_theme!(fontsize = 18,
+    Axis = (xgridvisible = false, ygridvisible = false,
+        topspinevisible = false, rightspinevisible = false));
+```
+
+## Calibration vs validation error
+
+```{julia}
+let
+    objective_labels = [
+        "Cut biomass\n[kg ha⁻¹]",
+        "Root surface area\nper belowground\nbiomass [m² g⁻¹]",
+        "Aboveground\nbiomass per\ntotal biomass [-]",
+        "Specific leaf\narea [m² g⁻¹]",
+        "Maximum\nheight [m]",
+        "Arbuscular\nmycorrhizal\ncolonisation [-]",
+        "Leaf nitrogen per\nleaf mass [mg g⁻¹]"
+    ]
+    
+    nsites, nobjectives = size(diff_sites)
+    all_ids = vcat(be_valid.BE_IDs_train, be_valid.BE_IDs_test)
+
+    ntrain_sites = length(be_valid.BE_IDs_train)
+    trainings_loss = mean(diff_sites[1:ntrain_sites, :], dims = 1)
+    validation_loss = mean(diff_sites[ntrain_sites+1:end, :], dims = 1)
+
+    color_map = cgrad(:viridis, 3, categorical = true)
+    color_vals = fill(color_map[2], nsites)
+    color_vals[1:ntrain_sites] .= color_map[1]
+
+    title_label = rich(rich("Calibration", color = color_map[1]),
+                       " vs. ",
+                       rich("validation", color = color_map[2]),
+                       "\nmean absolute error")
+
+    fig = Figure()
+
+    for i in 1:nobjectives
+        Axis(fig[i, 1]; width = 400, height = 150, ylabel = String(objective_labels[i]),
+             xticks = (vcat(1:ntrain_sites, ntrain_sites+2:nsites+1), all_ids),
+             title = i == 1 ? title_label : "",
+             xlabel = i == nobjectives ? "Site ID" : "",
+             xticklabelsvisible = i == nobjectives ? true : false,
+             xticklabelrotation= pi/2,
+             xticklabelsize = 12)
+
+        scatter!(vcat(1:ntrain_sites, ntrain_sites+2:nsites+1), diff_sites[:, i]; color = color_vals, markersize = 8)
+        
+        
+        lines!([1, ntrain_sites], [trainings_loss[i], trainings_loss[i]],
+               color = color_map[1])
+        lines!([ntrain_sites+2, nsites+1], [validation_loss[i], validation_loss[i]],
+               color = color_map[2])
+    end
+    
+    [rowgap!(fig.layout, i, 0) for i in 1:6]
+
+    resize_to_layout!(fig)
+    fig
+end	
+```
+
+## Trade-offs in the objectives
+
+### Error in sites
+```{julia}
+pairplot(diff_sites => (
+    PairPlots.Scatter(markersize = 10),
+    PairPlots.MarginHist(),
+    PairPlots.MarginConfidenceLimits(),
+    PairPlots.TrendLine(color=:red), # default is red
+    PairPlots.Correlation());
+    labels = Dict(
+        Symbol(1) => "cut biomass",
+        Symbol(2) => "rsa",
+        Symbol(3) => "abp",
+        Symbol(4) => "sla",
+        Symbol(5) => "maxheight",
+        Symbol(6) => "amc",
+        Symbol(7) => "lnc"
+    ))
+```
+
+### Pareto front
+```{julia}
+let
+    objective_labels = ["cut biomass", "rsa", "amc", "abp", "sla", "maxheight", "lnc"]
+    df = DataFrame(pareto_front(opt), 
+                   objective_labels)
+    pairplot(df => (PairPlots.Scatter(; markersize = 10, color = float.(my_dm.scores)),))
+    # dark lila is low, yellow is high
+end
+```
+
+
+## Parameter values in the population
+```{julia}
+let
+    pos = positions(opt)
+    p_names = be_valid.parameter_names
+
+    fig = Figure()
+    axes = []
+    for i in eachindex(p_names)
+        ax = Axis(fig[i, 1]; width = 400, height = 80)
+        hist!(pos[:, i], bins = 20)
+        Label(fig[i, 1], p_names[i], halign = :center, valign = :top)
+        push!(axes, ax)
+    end
+    
+    resize_to_layout!(fig)  
+    linkyaxes!(axes...)  
+    fig
+end
+```
+
+### Parameter values vs objective scores
+
+- the horizontal red lines are the selected parameter values
+```{julia}
+let
+    # Parameter values vs objective functions
+    objective_labels = ["cut biomass", :rsa, :amc, :abp, :sla, :maxheight, :lnc]
+    nparameter = length(be_valid.parameter_names)
+    nobjectives = length(objective_labels)
+
+    f_values = fvals(opt)
+    pos = positions(opt)
+    x = opt.population[my_dm.bestIndex].x
+
+    fig = Figure()
+    for i in 1:nobjectives
+        for u in 1:nparameter
+            Axis(fig[u, i],
+                 xlabel = u == nparameter ? String(objective_labels[i]) : "",
+                 ylabel = i == 1 ? be_valid.parameter_names[u] : "",
+                 yticklabelsvisible = i == 1 ? true : false,
+                 xticklabelsvisible = u == nparameter ? true : false,
+                 width = 200, height = 150)
+            scatter!(f_values[:, i], pos[:, u], color = float.(my_dm.scores))
+            hlines!(x[u]; color = :red, linewidth = 2)
+        end
+    end
+
+    resize_to_layout!(fig)
+    # dark lila is low, yellow is high
+    fig
+end	
+```
+

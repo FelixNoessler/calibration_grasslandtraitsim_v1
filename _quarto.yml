@@ -1,0 +1,35 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - "*.{qmd}"
+
+website:
+  title: "Calibration of `GrasslandTraitSim.jl` v1"
+  
+  sidebar:
+    style: "floating"
+    search: false
+    contents:
+      - href: data.qmd
+      - href: calibration_details.qmd
+      - section: Parameter
+        contents:
+        - href: parameter_fixed.qmd
+        - href: parameter_optimized.qmd
+      - section: Calibration results
+        contents:
+        - text: Overview
+          href: calibration_results_overview.qmd
+        - text: Sites
+          href: calibration_results_sites.qmd
+        - text: Patterns
+          href: calibration_results_patterns.qmd
+        - href: calibration_results_scenario.qmd
+
+format:
+  html:
+    engine: julia
+    theme: cosmo
+    toc: true
+    number-sections: true

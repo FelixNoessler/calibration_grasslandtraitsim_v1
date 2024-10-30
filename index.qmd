@@ -1,0 +1,12 @@
+---
+title: "Calibration of the process-based model `GrasslandTraitSim.jl` v1"
+---
+
+This websites shows the calibration of the `GrasslandTraitSim.jl` grassland simulation model. 
+
+The main model descrition can be found in the [GrasslandTraitSim.jl documentation](https://felixnoessler.github.io/GrasslandTraitSim.jl/dev/).
+
+The Julia programming code of the model can be found on [github.com/FelixNoessler/GrasslandTraitSim.jl](https://github.com/FelixNoessler/GrasslandTraitSim.jl).
+
+The Julia scripts for doing the calibration can be found on [github.com/FelixNoessler/calibration_grasslandtraitsim_v1](https://github.com/FelixNoessler/calibration_grasslandtraitsim_v1).
+

@@ -1,0 +1,787 @@
+---
+title: Patterns in the model
+bibliography: lit.bib
+engine: julia
+format:
+    html:
+        code-fold: true
+---
+
+# Preparation
+
+We will use the first (HEG01: mostly used as meadow) and the seventh grassland site (HEG07 mostly used as pasture) from the Hainich exploratories. If it is not indicated which site was used, the first site is used. We only simulate one species for now. We will use the mean trait values for the species. We will load the optimized parameters for the model. For the influence of traits, we will simulate two species with the same mean trait values, but one species will have a lower or higher value for the trait we want to investigate.
+
+We will change the following conditions:
+
+- Management: mowing, grazing
+- Climate: precipitation, potential evapotranspiration, temperature, photosynthetically active radiation
+- Site conditions: grain size distribution, bulk density, organic matter content
+- Traits: specific leaf area, arbuscular mycorrhizal colonization, potential height, root surface area per belowground biomass, aboveground biomass proportion, leaf nitrogen content per leaf biomass
+
+to debug the code and check for patterns in the model.
+
+```{julia}	
+import GrasslandTraitSim as sim
+using CairoMakie
+using Statistics
+using Accessors
+using Unitful
+
+####################################### Run one simulation
+all_traits = sim.input_traits();
+input_mowing_site = sim.validation_input(; plotID = "HEG01", nspecies = 1, time_step_days = 1);
+input_grazing_site = sim.validation_input(; plotID = "HEG07", nspecies = 1, time_step_days = 1);
+trait_input = (; zip(keys(all_traits), [mean(all_traits[t]) for t in keys(all_traits)])...)
+p = sim.optim_parameter()
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_site, p, trait_input);
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_site, p, trait_input);
+
+input_mowing_twospecies = sim.validation_input(; plotID = "HEG01", nspecies = 2, time_step_days = 1);
+input_grazing_twospecies = sim.validation_input(; plotID = "HEG07", nspecies = 2, time_step_days = 1);
+x = sol_mowing.simp.output_date_num;
+
+function plot_difference(solsmowing, solsgrazing, variable::Symbol, legend_labels::Vector{String})
+    ylabel = Dict(:biomass => "Total biomass [kg ha⁻¹]", :above_biomass => "Aboveground biomass [kg ha⁻¹]",
+                  :below_biomass => "Belowground biomass [kg ha⁻¹]", :height => "Plant height [m]") 
+
+    fig = Figure(; size = (500, 600))
+    ax1 = Axis(fig[1,1]; title = "meadow")
+    for sol in solsmowing
+        lines!(ax1, x, vec(ustrip.(sol.output[variable][:, 1, 1, 1])))
+    end
+    
+    ax2 = Axis(fig[2,1]; title = "pasture")
+    for (sol, label) in zip(solsgrazing, legend_labels)
+        lines!(ax2, x, vec(ustrip.(sol.output[variable][:, 1, 1, 1])), label = label)
+    end
+    
+    Label(fig[1:2, 0], ylabel[variable], rotation = pi/2)
+    Label(fig[3, 1], "Time [year]", tellwidth = false)
+    Legend(fig[4, 1], ax2; tellwidth = false, tellheight = true)
+    rowgap!(fig.layout, 2, 5)
+    rowgap!(fig.layout, 3, 15)
+    linkaxes!(ax1, ax2)
+    
+    fig
+end
+
+function plot_difference_one_site(sols, variable::Symbol, legend_labels::Vector{String}; title = "meadow")
+    ylabel = Dict(:biomass => "Total biomass [kg ha⁻¹]", :above_biomass => "Aboveground biomass [kg ha⁻¹]",
+                  :below_biomass => "Belowground biomass [kg ha⁻¹]", :height => "Plant height [m]") 
+
+    fig = Figure(; size = (500, 500))
+    ax1 = Axis(fig[1,1]; title)
+    for (label, sol) in zip(legend_labels,sols)
+        lines!(ax1, x, vec(ustrip.(sol.output[variable][:, 1, 1, 1])), label = label)
+    end
+    
+    Label(fig[1, 0], ylabel[variable], rotation = pi/2, tellheight = false)
+    Label(fig[2, 1], "Time [year]", tellwidth = false)
+    Legend(fig[3, 1], ax1; tellwidth = false, tellheight = true)
+    rowgap!(fig.layout, 2, 15)
+    
+    fig
+end
+
+function plot_trait_difference(solmowing, solgrazing, variable::Symbol, legend_label::String)
+    ylabel = Dict(:biomass => "Total biomass [kg ha⁻¹]", :above_biomass => "Aboveground biomass [kg ha⁻¹]",
+                  :below_biomass => "Belowground biomass [kg ha⁻¹]", :height => "Plant height [m]") 
+
+    fig = Figure(; size = (500, 600))
+    ax1, _ = lines(fig[1, 1], x, vec(ustrip.(solmowing.output[variable][:, 1, 1, 1])), 
+          axis = (; title = "meadow"))
+    lines!(x, vec(ustrip.(solmowing.output[variable][:, 1, 1, 2])))
+    
+    ax2, _ = lines(fig[2, 1], x, vec(ustrip.(solgrazing.output[variable][:, 1, 1, 1])), label = "reference",
+          axis = (; title = "pasture"))
+    lines!(x, vec(ustrip.(solgrazing.output[variable][:, 1, 1, 2])), label = legend_label)
+    
+    Label(fig[1:2, 0], ylabel[variable], rotation = pi/2)
+    Label(fig[3, 1], "Time [year]", tellwidth = false)
+    Legend(fig[4, 1], ax2; tellwidth = false, tellheight = true)
+    rowgap!(fig.layout, 2, 5)
+    rowgap!(fig.layout, 3, 15)
+    linkaxes!(ax1, ax2)
+    
+    fig
+end
+
+CairoMakie.update_theme!(; Axis = (; xticks = 2006:4:2022, 
+                                   xminorticks = 2006:2022, 
+                                   xminorticksvisible = true))
+```
+
+# Management
+## Mowing
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.CUT_mowing .= NaN * u"m"
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.CUT_mowing .= NaN * u"m"
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input);
+mylabels = ["reference", "no mowing"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :height, mylabels)
+```
+:::
+
+
+## Grazing
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.LD_grazing .= NaN / u"ha"
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.LD_grazing .= NaN / u"ha"
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input);
+mylabels = ["reference", "no grazing"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :height, mylabels)
+```
+:::
+
+## Mowing and Grazing
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.CUT_mowing .= NaN * u"m"
+input_mowing_site_mod1.input.LD_grazing .= NaN / u"ha"
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.CUT_mowing .= NaN * u"m"
+input_grazing_site_mod1.input.LD_grazing .= NaN / u"ha"
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input);
+mylabels = ["reference", "no management"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :height, mylabels)
+```
+:::
+
+
+# Climate
+## Precipitation
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.precipitation ./= 2
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_mowing_site_mod2 = deepcopy(input_mowing_site)
+input_mowing_site_mod2.input.precipitation .= 0.0u"mm"
+sol_mowing_mod2 = sim.solve_prob(; input_obj = input_mowing_site_mod2, p, trait_input);
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.precipitation ./= 2
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input)
+
+input_grazing_site_mod2 = deepcopy(input_grazing_site)
+input_grazing_site_mod2.input.precipitation .= 0.0u"mm"
+sol_grazing_mod2 = sim.solve_prob(; input_obj = input_grazing_site_mod2, p, trait_input);
+mylabels = ["reference", "precipitation / 2", "no precipitation"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :height, mylabels)
+```
+:::
+
+## Potential evapotranspiration
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.PET_sum ./= 2
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.PET_sum ./= 2
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input);
+mylabels = ["reference", "PET ⋅ 0.5"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :height, mylabels)
+```
+:::
+
+
+## Temperature
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.temperature .*= 0.5
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.temperature .*= 0.5
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input);
+mylabels = ["reference", "T ⋅ 0.5"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1], [sol_grazing, sol_grazing_mod1], :height, mylabels)
+```
+:::
+
+
+## Photosynthetically active radiation
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+input_mowing_site_mod1.input.PAR_sum .= round.(u"MJ/ha", input_mowing_site_mod1.input.PAR_sum .* 1.5)
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_mowing_site_mod2 = deepcopy(input_mowing_site)
+input_mowing_site_mod2.input.PAR .= round.(u"MJ/ha", input_mowing_site_mod2.input.PAR .* 0.5)
+sol_mowing_mod2 = sim.solve_prob(; input_obj = input_mowing_site_mod2, p, trait_input);
+
+input_grazing_site_mod1 = deepcopy(input_grazing_site)
+input_grazing_site_mod1.input.PAR_sum .= round.(u"MJ/ha", input_grazing_site_mod1.input.PAR_sum .* 1.5)
+sol_grazing_mod1 = sim.solve_prob(; input_obj = input_grazing_site_mod1, p, trait_input)
+
+input_grazing_site_mod2 = deepcopy(input_grazing_site)
+input_grazing_site_mod2.input.PAR .= round.(u"MJ/ha", input_grazing_site_mod2.input.PAR .* 0.5)
+sol_grazing_mod2 = sim.solve_prob(; input_obj = input_grazing_site_mod2, p, trait_input);
+mylabels = ["reference", "1.5 ⋅ PARsum (more growth)", "0.5 ⋅ PAR (less radiation damage)"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], [sol_grazing, sol_grazing_mod1, sol_grazing_mod2], :height, mylabels)
+```
+:::
+
+
+# Site conditions
+## Grain size distribution
+
+- uFC: usable field capacity
+
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod1.site.sand = input_mowing_site_mod1.site.sand + 0.5
+@reset input_mowing_site_mod1.site.clay = input_mowing_site_mod1.site.clay - 0.5
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_mowing_site_mod2 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod2.site.silt = input_mowing_site_mod2.site.silt - 0.4
+@reset input_mowing_site_mod2.site.clay = input_mowing_site_mod2.site.clay + 0.4
+sol_mowing_mod2 = sim.solve_prob(; input_obj = input_mowing_site_mod2, p, trait_input);
+
+input_mowing_site_mod3 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod3.site.silt = input_mowing_site_mod3.site.silt + 0.4
+@reset input_mowing_site_mod3.site.clay = input_mowing_site_mod3.site.clay - 0.4
+sol_mowing_mod3 = sim.solve_prob(; input_obj = input_mowing_site_mod3, p, trait_input);
+
+uFC(sol) = round(u"mm", sol.patch_variables.WHC[1, 1]  - sol.patch_variables.PWP[1, 1]; digits = 0)
+grain_size_str(sol) = "sand: $(round(sol.site.sand; digits = 3)), silt: $(round(sol.site.silt; digits = 3)), \nclay: $(round(sol.site.clay; digits = 3)), uFC: $(uFC(sol))";
+mylabels = ["$l; $(grain_size_str(s))" for (l,s) in zip(["reference", "more sand", "more clay", "more silt"], [sol_mowing, sol_mowing_mod1, sol_mowing_mod2, sol_mowing_mod3])];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2, sol_mowing_mod3], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2, sol_mowing_mod3], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2, sol_mowing_mod3], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2, sol_mowing_mod3], :height, mylabels)
+```
+:::
+
+
+## Bulk density, organic matter content
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod1.site.organic = input_mowing_site_mod1.site.organic * 1.5
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_mowing_site_mod2 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod2.site.bulk = input_mowing_site_mod2.site.bulk * 1.5
+sol_mowing_mod2 = sim.solve_prob(; input_obj = input_mowing_site_mod2, p, trait_input);
+
+bulk_organic(sol) = "organic: $(round(sol.site.organic; digits = 3)), bulk: $(round(u"g/cm^3", sol.site.bulk; digits = 3)), \n uFC: $(uFC(sol))";
+mylabels = ["$l; $(grain_size_str(s))" for (l,s) in zip(["reference", "higher organic matter content", "higher bulk density"], [sol_mowing, sol_mowing_mod1, sol_mowing_mod2])];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :height, mylabels)
+```
+:::
+
+
+## Nutrients
+```{julia}
+input_mowing_site_mod1 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod1.site.totalN = input_mowing_site_mod1.site.totalN * 0.5
+sol_mowing_mod1 = sim.solve_prob(; input_obj = input_mowing_site_mod1, p, trait_input)
+
+input_mowing_site_mod2 = deepcopy(input_mowing_site)
+@reset input_mowing_site_mod2.site.totalN = input_mowing_site_mod2.site.totalN * 1.5
+sol_mowing_mod2 = sim.solve_prob(; input_obj = input_mowing_site_mod2, p, trait_input);
+mylabels = ["reference", "less nutrients (totalN ⋅ 0.5)", "more nutrients (totalN ⋅ 1.5)"];
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :biomass, mylabels)
+```
+
+## Aboveground biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :above_biomass, mylabels)
+```
+
+## Belowground biomass
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :below_biomass, mylabels)
+```
+
+## Height
+```{julia}
+plot_difference_one_site([sol_mowing, sol_mowing_mod1, sol_mowing_mod2], :height, mylabels)
+```
+:::
+
+
+# Traits
+## Specific leaf area
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.sla[2] = traits_twospecies.sla[2] * 0.8
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low sla (0.8 ⋅ sla)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+
+## Arbuscular mycorrhizal colonization
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.amc[2] = traits_twospecies.amc[2] * 0.5
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low amc (0.5 ⋅ amc)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+
+## Maximum height
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.maxheight[2] = traits_twospecies.maxheight[2] * 0.5
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low maxheight (0.5 ⋅ maxheight)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+
+### Maximum height without mowing
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.maxheight[2] = traits_twospecies.maxheight[2] * 0.5
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+input_grazing_twospecies_mod = deepcopy(input_grazing_twospecies)
+input_mowing_twospecies_mod = deepcopy(input_mowing_twospecies)
+@reset input_grazing_twospecies_mod.simp.included.mowing = false
+@reset input_mowing_twospecies_mod.simp.included.mowing = false
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies_mod, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies_mod, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low maxheight (0.5 ⋅ maxheight)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+
+### Maximum height without grazing
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.maxheight[2] = traits_twospecies.maxheight[2] * 0.5
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+input_grazing_twospecies_mod = deepcopy(input_grazing_twospecies)
+input_mowing_twospecies_mod = deepcopy(input_mowing_twospecies)
+@reset input_grazing_twospecies_mod.simp.included.grazing = false
+@reset input_mowing_twospecies_mod.simp.included.grazing = false
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies_mod, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies_mod, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low maxheight (0.5 ⋅ maxheight)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+
+## Root surface area per belowground biomass
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.rsa[2] = traits_twospecies.rsa[2] * 0.5
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low RSA (0.5 ⋅ RSA)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+
+## Aboveground biomass proportion
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.abp[2] = traits_twospecies.abp[2] * 0.5
+traits_twospecies.lbp[2] = traits_twospecies.abp[2] * 0.8 ## lbp has to be updated
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies, p, trait_input = traits_twospecies);
+mylegendlabel = "species with low ABP (0.5 ⋅ ABP)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::
+
+## Leaf nitrogen content per leaf biomass
+```{julia}
+traits_twospecies = (; zip(keys(all_traits), [fill(mean(all_traits[t]), 2) for t in keys(all_traits)])...)
+traits_twospecies.lnc[2] = traits_twospecies.lnc[2] * 0.5
+traits_twospecies.amc[1] = traits_twospecies.amc[1] * 1.000000001
+traits_twospecies.rsa[1] = traits_twospecies.rsa[1] * 1.00000001
+
+sol_mowing = sim.solve_prob(; input_obj = input_mowing_twospecies, p, trait_input = traits_twospecies)
+sol_grazing = sim.solve_prob(; input_obj = input_grazing_twospecies, p, trait_input = traits_twospecies)
+mylegendlabel = "species with low LNC (0.5 ⋅ LNC)";
+```
+
+::: {.panel-tabset}
+## Total biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :biomass, mylegendlabel)
+```
+
+## Aboveground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :above_biomass, mylegendlabel)
+```
+
+## Belowground biomass
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :below_biomass, mylegendlabel)
+```
+
+## Height
+```{julia}
+plot_trait_difference(sol_mowing, sol_grazing, :height, mylegendlabel)
+```
+:::

@@ -1,0 +1,18 @@
+---
+title: "Optimized parameter"
+bibliography: lit.bib
+engine: julia
+format:
+    html:
+        code-fold: true
+---
+
+```{julia}
+using PrettyTables
+
+include("scripts/calibration/0_calibration_object.jl")
+be_opt = BE_optimization()
+
+pretty_table(HTML, [be_opt.parameter_names be_opt.lb be_opt.ub]; 
+             header = ["Parameter", "Lower bound", "Upper bound"])
+```

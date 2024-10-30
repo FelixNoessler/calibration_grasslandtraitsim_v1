@@ -1,0 +1,99 @@
+---
+title: "Calibration results"
+bibliography: lit.bib
+engine: julia
+format:
+    html:
+        page-layout: full
+        code-fold: true
+---
+
+```{=html}
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"></script>
+```
+
+For all calibration and validation sites, the observed data (black dots) and the simulation output (red and grey lines) are visualised. The red line represents the best and the grey lines the 25 best parameter combinations from the population. 
+
+::: {.panel-tabset}
+
+## Calibration sites
+
+```{=html}
+<div class="dropdown show">
+    <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Select a site
+    </a>
+    
+<div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG05.png">05</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG06.png">06</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG10.png">10</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG11.png">11</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG13.png">13</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG14.png">14</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG26.png">26</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG28.png">28</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG29.png">29</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG34.png">34</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG47.png">47</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG48.png">48</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG49.png">49</a>
+    <a class="dropdown-item dropdown-calibration" href="#" data-image="img/calibration/HEG50.png">50</a>
+</div>
+</div>
+
+<br>
+<img src="img/calibration/HEG05.png" rel="popover" alt="" class = "calibration-img" style="max-width: 500px">
+```
+
+
+
+## Validation sites
+
+```{=html}
+<div class="dropdown show">
+    <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Select a site
+    </a>
+
+<div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG01.png">01</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG02.png">02</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG03.png">03</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG04.png">04</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG15.png">15</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG22.png">22</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG23.png">23</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG24.png">24</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG27.png">27</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG30.png">30</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG31.png">31</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG32.png">32</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG33.png">33</a>
+    <a class="dropdown-item dropdown-validation" href="#" data-image="img/calibration/HEG37.png">37</a>
+</div>
+</div>
+
+<br>
+<img src="img/calibration/HEG01.png" rel="popover" alt="" class ="validation-img" style="max-width: 500px">
+```
+
+:::
+
+
+
+```{=html}
+<script>
+$(".dropdown-calibration").click(function() {
+    const image_location = $(this).data("image");
+    $(".calibration-img").attr("src", image_location);
+});
+
+$(".dropdown-validation").click(function() {
+    const image_location = $(this).data("image");
+    $(".validation-img").attr("src", image_location);
+});
+</script>
+```
