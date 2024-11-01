@@ -151,7 +151,7 @@ function BE_optimization(; all_sites = false)
         ["ζ_SEA_ST1", 500.0, 800.0], #u"°C"
         ["ζ_SEA_ST2", 1200.0, 1800.0], #u"°C"
 
-        ["α_SEN_month", 0.03, 0.1],
+        ["α_SEN", 0.03, 0.1],
         ["β_SEN_sla", 0.0, 3.0],
         ["ψ_SEN_ST1", 700.0, 2000.0], #u"°C"
         ["ψ_SENmax", 1.0, 3.0],
@@ -177,6 +177,18 @@ function BE_optimization(; all_sites = false)
         κ_GRZ = 22.0u"kg",
         ψ_SEN_ST2 = 3000.0u"°C",
         ϵ_GRZ_minH = 0.05u"m",
+
+        β_SND_WHC = 0.5678,
+        β_SLT_WHC = 0.9228,
+        β_CLY_WHC = 0.9135,
+        β_OM_WHC = 0.6103,
+        β_BLK_WHC = -0.2696u"cm^3/g",
+        β_SND_PWP = -0.0059,
+        β_SLT_PWP = 0.1142,
+        β_CLY_PWP = 0.5766,
+        β_OM_PWP = 0.2228,
+        β_BLK_PWP = 0.02671u"cm^3/g",
+
 
         # set to the mean trait per default
         ϕ_TAMC = mean((1 .- trait_input.abp) .* trait_input.amc),
