@@ -363,26 +363,39 @@ end
 
 #### Results on sites
 let
+    traits = [:maxheight, :sla, :lnc, :abp, :rsa, :amc]
     axes_labels = [
-        "Root surface area\nper belowground\nbiomass [m² g⁻¹]",
-        "Aboveground\nbiomass per\ntotal biomass [-]",
+        "Maximum height [m]",
         "Specific leaf\narea [m² g⁻¹]",
-        "Maximum\nheight [m]",
+        "Leaf nitrogen\nper leaf mass [mg g⁻¹]",
+        "Aboveground\nbiomass per\ntotal biomass [-]",
+        "Root surface area\nper belowground\nbiomass [m² g⁻¹]",
         "Arbuscular\nmycorrhizal\ncolonisation [-]",
-        "Leaf nitrogen\nper leaf mass\n[mg g⁻¹]"
     ]
-    traits = [:rsa, :abp, :sla, :maxheight, :amc, :lnc]
+
     landuse = [1:5, 1:8]
     f = x -> 40 .* sqrt.((x)./π)
     trait_vals = sim.input_traits()
+    nspecies = length(trait_vals[:maxheight])
 
     for i in eachindex(plotIDs)
         @info plotIDs[i]
         fig = Figure()
         for axi in 1:2
+
+            mean_rel_biomass = zeros(length(landuse[axi]), nspecies)
+            for l in landuse[axi]
+                sol = run_sim(be_valid; p, plotID = plotIDs[i],
+                    nmowing = axi == 1 ? l : 0,
+                    grazing_i = axi == 2 ? l : 0);
+                relative_biomass = sol.output.biomass[end÷2:end, 1, 1, :] ./ sum(sol.output.biomass[end÷2:end, 1, 1, :]; dims = :species)
+                mean_rel_biomass[l, :] = vec(mean(relative_biomass; dims = :time))
+            end
+
             for t in eachindex(traits)
                 selected_trait = ustrip.(trait_vals[traits[t]])
                 maxt = 1.1 * maximum(selected_trait)
+                mint = traits[t] == :maxheight ? 0.0 : nothing
                 Axis(fig[t+2, axi];
                     topspinevisible = true,
                     rightspinevisible = true,
@@ -396,20 +409,13 @@ let
                     yticksvisible = axi == 1 ? true : false,
                     xticks = axi == 1 ? [1,2,3,4,5] : ([2,4,6,8], ["1", "2", "3", "4"]),
                     xminorticksvisible = axi == 2 && t == length(traits) ? true : false,
-                    limits = axi == 1 ? (0.52, 5.48, nothing, maxt) : (0.52, 8.48, nothing, maxt),
-
+                    limits = axi == 1 ? (0.52, 5.48, mint, maxt) : (0.52, 8.48, mint, maxt),
                     width = 400, height = 150,
                     yticks = LinearTicks(3))
 
                 for l in landuse[axi]
-                    sol = run_sim(be_valid; p, plotID = plotIDs[i],
-                        nmowing = axi == 1 ? l : 0,
-                        grazing_i = axi == 2 ? l : 0);
-                    relative_biomass = sol.output.biomass[end÷2:end, 1, 1, :] ./ sum(sol.output.biomass[end÷2:end, 1, 1, :]; dims = :species)
-                    mean_rel_biomass = vec(mean(relative_biomass; dims = :time))
-
                     scatter!(fill(l, length(trait_vals[t])), selected_trait;
-                        markersize = f(mean_rel_biomass),
+                        markersize = f(mean_rel_biomass[l, :]),
                         color = (:steelblue, 0.7))
                 end
             end
@@ -417,7 +423,6 @@ let
 
         ms1 = [MarkerElement(color = (:steelblue, 0.7) , markersize = f(s), marker = '●') for s in [0.1, 0.3, 0.5, 0.7, 0.9]]
         ls1 = string.([0.1, 0.3, 0.5, 0.7, 0.9])
-
 
         is_train = String(plotIDs[i]) ∈ be_valid.BE_IDs_train
         sitetype_label = is_train ? "calibration" : "validation"

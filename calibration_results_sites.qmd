@@ -1,5 +1,5 @@
 ---
-title: "Calibration results for all plots"
+title: "Calibration results for all sites"
 bibliography: lit.bib
 engine: julia
 format:
@@ -14,16 +14,16 @@ format:
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"></script>
 ```
 
-For all calibration and validation plots, the observed data (black dots) and the simulation output (red and grey lines) are visualised. The red line represents the best and the grey lines the 25 best parameter combinations from the population. 
+For all calibration and validation sites, the observed data (black dots) and the simulation output (red and grey lines) are visualised. The red line represents the best and the grey lines the 25 best parameter combinations from the population. 
 
 ::: {.panel-tabset}
 
-## Calibration plots
+## Calibration sites
 
 ```{=html}
 <div class="dropdown show">
     <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    Select a plot
+    Select a site
     </a>
     
 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
@@ -50,12 +50,12 @@ For all calibration and validation plots, the observed data (black dots) and the
 
 
 
-## Validation plots
+## Validation sites
 
 ```{=html}
 <div class="dropdown show">
     <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    Select a plot
+    Select a site
     </a>
 
 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
