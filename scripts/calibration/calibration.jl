@@ -7,7 +7,6 @@ using Metaheuristics
 using DimensionalData
 using Statistics
 using CairoMakie
-using Distributions
 using JMcDM
 import Dates
 using PairPlots

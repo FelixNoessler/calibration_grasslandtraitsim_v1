@@ -206,6 +206,9 @@ for i in eachindex(plotIDs)
     end
 end
 
+set_theme!(fontsize = 18,
+    Axis = (xgridvisible = false, ygridvisible = false,
+        topspinevisible = false, rightspinevisible = false))
 
 begin
     axes_labels = [
@@ -214,7 +217,7 @@ begin
         "Yearly grazed or\nmown biomass\n[kg ha⁻¹]",
         "Height [m]",
         "Functional\ndispersion [-]",
-        "Functional\neveness [-]"
+        "Functional\nevenness [-]"
     ]
 
     first_ax = 1
@@ -289,7 +292,7 @@ begin
     axes_labels = [
         "Maximum\nheight [m]",
         "Specific leaf\narea [m² g⁻¹]",
-        "Leaf nitrogen\nper leaf mass [mg g⁻¹]",
+        "Leaf nitrogen per\nleaf mass [mg g⁻¹]",
         "Aboveground\nbiomass per\ntotal biomass [-]",
         "Root surface area\nper belowground\nbiomass [m² g⁻¹]",
         "Arbuscular\nmycorrhizal\ncolonisation [-]",
@@ -304,7 +307,7 @@ begin
     for t in first_ax:last_ax
         ax = Axis(fig[t, 1]; xticksvisible = t == last_ax ? true : false,
                   xticklabelsvisible = t == last_ax ? true : false,
-                  yticks = Makie.LinearTicks(4),
+                  yticks = Makie.LinearTicks(3),
                   width = 400, height = 150,
                   xticks = 1:5,
                   ylabel = axes_labels[t],
@@ -324,6 +327,7 @@ begin
     for t in first_ax:last_ax
         ax = Axis(fig[t, 2];
                   yticklabelsvisible = false, yticksvisible = false,
+                  yticks = Makie.LinearTicks(3),
                   rightspinevisible = true,
                   width = 400, height = 150,
                   xticksvisible = t == last_ax ? true : false,
@@ -350,7 +354,9 @@ begin
         Box(fig[0, i], color = :gray90, height = 30)
         Label(fig[0, i], label)
     end
-    colgap!(fig.layout, 1, 0)
+
+    Label(fig[1:6, 0], "Community-weighted mean traits", rotation = pi/2, fontsize = 20)
+    colgap!(fig.layout, 2, 0)
     [rowgap!(fig.layout, i, 0) for i in 1:6]
 
     resize_to_layout!(fig)

@@ -48,7 +48,7 @@ end
 
 ### update calibrated parameters for GrasslandTraitSim.jl package
 θ = prepare_p(opt.population[my_dm.bestIndex].x, be_valid.parameter_names)
-jldsave(sim.assetpath("data/optim.jld2"); θ)
+jldsave(sim.assetpath("data/optim.jld2"); θ = merge(θ, be_valid.fixed_parameter))
 
 ### plot the validation with the worst and best score for cut aboveground biomass
 diff_sites = error_for_sites(be_valid, opt.population[my_dm.bestIndex].x;

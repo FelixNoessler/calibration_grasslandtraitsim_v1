@@ -89,8 +89,12 @@ let
     end
 
     arrows!([0.5], [α_R_05_vals[1]-0.01], [0], [α_R_05_vals[2] - α_R_05_vals[1] + 0.03])
-    text!(0.5 + 0.01, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3,
-          text = L"\alpha_{R, 05}")
+    scatter!(0.5 + 0.11, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
+    scatter!(0.5 + 0.1, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
+    scatter!(0.5 + 0.09, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
+    scatter!(0.5 + 0.08, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
+    text!(0.5 + 0.07, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3,
+          text = L"\alpha_{RED, 05}", align = (:center, :center))
 
 
     x0, _, _ = calc_reducer(0.5, 20; ɑ_R_05 = α_R_05_vals[1], δ_R = δ_R_vals[1])
@@ -102,13 +106,14 @@ let
     arrows!([x0 - 0.02], [0.5], [0.1*f], [0.22*f])
     arrows!([x0 - 0.02], [0.5], [-0.1*f], [-0.22*f])
     scatter!(x0 + 0.02, 0.5, color = :white, markersize = 35)
-    text!(x0 + 0.02, 0.5, text = L"\beta_{R}", align = (:center, :center))
+    scatter!(x0 + 0.05, 0.5, color = :white, markersize = 35)
+    text!(x0 + 0.04, 0.5, text = L"\beta_{RED}", align = (:center, :center))
 
 
     x0, _, _ = calc_reducer(0.5, 20; ɑ_R_05 = α_R_05_vals[2], δ_R = δ_R_vals[2])
     arrows!([x0], [0.5], [0.03], [0])
     arrows!([x0], [0.5], [-0.03], [0])
-    text!(x0 + 0.06, 0.5, text = L"\delta_{R}", align = (:left, :center))
+    text!(x0 + 0.06, 0.5, text = L"\delta_{RED}", align = (:left, :center))
 
 
     text!([0.3, 0.7], [0.95, 0.95], text = ["A", "B"], align = (:center, :center),
@@ -116,7 +121,7 @@ let
 
     Colorbar(fig[1, 2], colormap = cmap,
              ticks = ([0.1, 0.3, 0.5, 0.7, 0.9],
-                      [L"\ll ϕ_R", L"< ϕ_R", L"ϕ_R", L"> ϕ_R", L"\gg ϕ_R"]),
+                      [L"\ll ϕ_{trait}", L"< ϕ_{trait}", L"ϕ_{trait}", L"> ϕ_{trait}", L"\gg ϕ_{trait}"]),
              label = "Trait values")
 
 

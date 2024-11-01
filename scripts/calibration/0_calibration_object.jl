@@ -179,8 +179,8 @@ function BE_optimization(; all_sites = false)
         ϵ_GRZ_minH = 0.05u"m",
 
         # set to the mean trait per default
-        ϕ_amc = mean((1 .- trait_input.abp) .* trait_input.amc),
-        ϕ_rsa = mean((1 .- trait_input.abp) .* trait_input.rsa),
+        ϕ_TAMC = mean((1 .- trait_input.abp) .* trait_input.amc),
+        ϕ_TRSA = mean((1 .- trait_input.abp) .* trait_input.rsa),
         ϕ_sla = mean(trait_input.sla),
 
         # fixed by me
