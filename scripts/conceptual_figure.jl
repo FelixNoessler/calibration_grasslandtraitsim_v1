@@ -19,12 +19,18 @@ let
 
     fig = Figure()
     cmap = cgrad(:viridis, 5, categorical = true)
-    lws = [1.5,1.5,3,1.5,1.5]
+    lws = [1.5,1.5,4,1.5,1.5]
     ax_settings = (; width = 400, height = 400, limits = (0,1,0,1))
 
     Axis(fig[1, 1];
-         xlabel = "Ressource density",
-         ylabel = "Growth reducer\n← stronger reduction, less reduction →",
+         xlabel = rich("Ressource density (",
+                       rich("Nₚ", font = :italic), ", ",
+                       rich("Wₚ", font = :italic), ")"),
+         ylabel = rich("Growth reducer (",
+                       rich("NUT", subscript("amc"), font = :italic), ", ",
+                       rich("NUT", subscript("rsa"), font = :italic), ", ",
+                       rich("WAT", font = :italic),
+                       ")\n← stronger reduction, less reduction →"),
          ax_settings ...)
 
     for (i,t) in enumerate(16:2:24)
@@ -35,8 +41,6 @@ let
         reducer = getindex.(res, 3)
 
         lines!(ressource, reducer, color = cmap[i], linewidth = lws[i])
-        # scatter!(0.5, R_05; marker = :x, markersize = 12, color = cmap[i])
-        # scatter!(x0, 0.5; marker = :x, markersize = 12, color = cmap[i])
     end
 
     for (i,t) in enumerate(16:2:24)
@@ -48,11 +52,6 @@ let
 
         if i == 3
             scatter!(0.5, R_05; color = :red, markersize = 12)
-
-            # m = 0.7
-            # scatter!(x0, 0.5; marker = '●', markersize = 8, color = :black)
-            # arrows!([x0], [0.5], [m*0.05], [0]; )
-            # arrows!([x0], [0.5], [m*-0.05], [0]; )
         end
     end
 
@@ -65,8 +64,6 @@ let
         reducer = getindex.(res, 3)
 
         lines!(ressource, reducer, color = cmap[i], linewidth = lws[i])
-        # scatter!(0.5, R_05; marker = :x, markersize = 12, color = cmap[i])
-        # scatter!(x0, 0.5; marker = :x, markersize = 12, color = cmap[i])
     end
 
 
@@ -79,34 +76,25 @@ let
 
         if i == 3
             scatter!(0.5, R_05; color = :red, markersize = 12)
-            # arrows!([0.5+0.02], [R_05], [0], [-(R_05 - 0.41)]; )
-
-            # m = 1.7
-            # scatter!(x0, 0.5; marker = '●', markersize = 8, color = :black)
-            # arrows!([x0], [0.5], [m*0.05], [0]; )
-            # arrows!([x0], [0.5], [m*-0.05], [0]; )
         end
     end
 
     arrows!([0.5], [α_R_05_vals[1]-0.01], [0], [α_R_05_vals[2] - α_R_05_vals[1] + 0.03])
-    scatter!(0.5 + 0.11, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
-    scatter!(0.5 + 0.1, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
-    scatter!(0.5 + 0.09, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
-    scatter!(0.5 + 0.08, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3, color = :white, markersize = 35)
+    scatter!(0.5 + 0.11, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3 - 0.005, color = :white, markersize = 35)
+    scatter!(0.5 + 0.1, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3 - 0.005, color = :white, markersize = 35)
+    scatter!(0.5 + 0.09, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3 - 0.005, color = :white, markersize = 35)
+    scatter!(0.5 + 0.08, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3 - 0.005, color = :white, markersize = 35)
     text!(0.5 + 0.07, α_R_05_vals[1] - (α_R_05_vals[1] - α_R_05_vals[2]) / 3,
           text = L"\alpha_{RED, 05}", align = (:center, :center))
 
 
     x0, _, _ = calc_reducer(0.5, 20; ɑ_R_05 = α_R_05_vals[1], δ_R = δ_R_vals[1])
-    # arrows!([x0], [0.5], [0.1], [0])
-    # arrows!([x0], [0.5], [-0.1], [0])
-    # text!(x0 + 0.13, 0.5, text = L"\delta_{R}", align = (:left, :center))
 
     f = 0.6
     arrows!([x0 - 0.02], [0.5], [0.1*f], [0.22*f])
     arrows!([x0 - 0.02], [0.5], [-0.1*f], [-0.22*f])
-    scatter!(x0 + 0.02, 0.5, color = :white, markersize = 35)
-    scatter!(x0 + 0.05, 0.5, color = :white, markersize = 35)
+    scatter!(x0 + 0.02, 0.5 - 0.005, color = :white, markersize = 35)
+    scatter!(x0 + 0.05, 0.5 - 0.005, color = :white, markersize = 35)
     text!(x0 + 0.04, 0.5, text = L"\beta_{RED}", align = (:center, :center))
 
 
@@ -122,7 +110,9 @@ let
     Colorbar(fig[1, 2], colormap = cmap,
              ticks = ([0.1, 0.3, 0.5, 0.7, 0.9],
                       [L"\ll ϕ_{trait}", L"< ϕ_{trait}", L"ϕ_{trait}", L"> ϕ_{trait}", L"\gg ϕ_{trait}"]),
-             label = "Trait values")
+             label = rich("Trait values (",
+                          rich("TRSA", font = :italic), ", ",
+                          rich("TAMC", font = :italic), ")" ))
 
 
     resize_to_layout!(fig)

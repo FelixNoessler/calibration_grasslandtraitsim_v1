@@ -1,7 +1,7 @@
 import Pkg
 
-if isdir("calibration_grasslandtraitsim_v1")
-    cd("calibration_grasslandtraitsim_v1")
+if isdir("Calibration_GrasslandTraitSim_v1")
+    cd("Calibration_GrasslandTraitSim_v1")
     Pkg.activate(".")
-    Pkg.develop(path="../1_GrasslandTraitSim")
+    Pkg.develop(path="../Model_code_GrasslandTraitSim_v1")
 end

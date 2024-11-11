@@ -79,7 +79,7 @@ end
 
 function bexis_root_traits(path)
     @info "Loading bexis root traits"
-    df = CSV.read(data_path * "root_traits.csv", DataFrame;
+    df = CSV.read(path * "root_traits.csv", DataFrame;
         missingstring="NA")
 
     df = @chain df begin
@@ -212,8 +212,8 @@ end
 function load_lnc_try(path)
     @info "Loading try lnc"
 
-    if isfile(path *  "Leaf_nitrogen_content_TRY.csv")
-        df = CSV.read(path *  "Leaf_nitrogen_content_TRY.csv", DataFrame)
+    if isfile(path *  "TRY_Leaf_nitrogen_content.csv")
+        df = CSV.read(path *  "TRY_Leaf_nitrogen_content.csv", DataFrame)
         @transform! df :lnc = :lnc * u"mg/g"
         @subset! df .! ismissing.(:species)
         return df
@@ -261,6 +261,13 @@ function load_lnc_try(path)
     @transform! df :lnc = :lnc * u"mg/g"
 
     return df
+end
+
+function load_maxheight(path)
+    @chain CSV.read(path * "Rothmaler_maxheight.csv", DataFrame) begin
+        @transform :maxheight = :maxheight .* u"m"
+        @select :species :maxheight
+    end
 end
 
 ### export citation from TRY

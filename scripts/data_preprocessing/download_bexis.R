@@ -11,15 +11,16 @@ download_bexis_dataset <- function(id, name, output_dir){
 }
 
 bexis.options("base_url" = "https://www.bexis.uni-jena.de/")
-data_dir = "data/"
+data_dir = "Calibration_data/BE/"
 
 
 ## approximate (public) coordinates 
 download_bexis_dataset(id = 1000, name = "approx_site_coordinates", output_dir = data_dir)
  
 ## management input for grazing and mowing
-download_bexis_dataset(id = 31715, name = "management_input", output_dir = data_dir)
+# download_bexis_dataset(id = 31715, name = "management_input", output_dir = data_dir)
 download_bexis_dataset(id = 25086, name = "LUI_tool_input", output_dir = data_dir)
+# supplementary_feeding.csv was manually created from https://www.bexis.uni-jena.de/ddm/data/Showdata/26487
 
 ## cut biomass (botany core)
 download_bexis_dataset(id = 16209, name = "biomass_2009", output_dir = data_dir)

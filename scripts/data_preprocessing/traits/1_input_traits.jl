@@ -1,15 +1,11 @@
 include("0_functions_load_traits.jl")
 
 ##### load tables
-data_path = "../data/"
-output_path = "traits.csv"
-df_leaf = bexis_leaf_traits(data_path)
-df_root = bexis_root_traits(data_path)
-df_leda = LEDA_height(data_path)
+data_path = "../Raw_data/"
+df_leaf = bexis_leaf_traits(data_path * "BE/")
+df_root = bexis_root_traits(data_path * "BE/")
 df_try = load_lnc_try(data_path)
-df_maxheight = CSV.read(data_path * "maxheight_rothmaler.csv", DataFrame)
-@transform! df_maxheight :maxheight = :maxheight .* u"m"
-@select! df_maxheight :species :maxheight
+df_maxheight = load_maxheight(data_path)
 
 ##### Add root data for Taraxacum officinale
 # https://groot-database.github.io/GRooT/
@@ -20,9 +16,7 @@ push!(df_root, ("Taraxacum officinale", "-", 0.12u"m^2/g", 0.7, missing, 0.47, 0
 df_bexis = outerjoin(df_leaf, df_root, on = :species, makeunique = true)
 @rtransform! df_bexis :sla = uconvert(u"m^2 / g", mean_missing(:sla1, :sla2))
 @select! df_bexis $(Not([:sla1, :sla2, :LA, :LDM]))
-df = leftjoin(df_bexis, df_leda, on = :species)
-manual_height!(df)
-df1 = leftjoin(df, df_try, on = :species)
+df1 = leftjoin(df_bexis, df_try, on = :species)
 
 ## export from try datasets citations:
 # try_dataset_references(df.species)
@@ -31,20 +25,20 @@ df1 = leftjoin(df, df_try, on = :species)
 df_out = @chain df1 begin
     @orderby :species
     @rename :rsa = :srsa
-    @rsubset !any(ismissing.([:rsa, :amc, :abp, :bbp, :sla, :height, :lnc]))
+    @rsubset !any(ismissing.([:rsa, :amc, :abp, :bbp, :sla, :lnc]))
     @rtransform begin
         :rsa = round(typeof(:rsa), :rsa; digits = 4)
         :amc = round(:amc; digits = 3)
         :abp = round(:abp; digits = 3)
         :bbp = round(:bbp; digits = 3)
         :sla = round(typeof(:sla), :sla; digits = 5)
-        :height = round(typeof(:height), :height; digits = 4)
         :lnc = round(typeof(:lnc), :lnc; digits = 1)
     end
     innerjoin(df_maxheight, on = :species)
     # or : species .∉ Ref(["Phragmites australis", "Phalaris arundinacea"])
     @subset :maxheight .<= 2u"m"
-    @select Not([:leaf_species_orig, :root_species_orig, :species_leda, :height, :bbp])
+    @select Not([:leaf_species_orig, :root_species_orig, :bbp])
+    @orderby :species
 end
 
 ### Poa annua has a very high SLA value, which is not realistic
@@ -61,7 +55,7 @@ df_out_wo_units = @rtransform df_out begin
     :maxheight = ustrip(:maxheight)
     :lnc = ustrip(:lnc)
 end
-CSV.write(output_path, df_out_wo_units)
+CSV.write("../Input_data/Traits.csv", df_out_wo_units)
 
 ##### read file and add units
 @chain CSV.read(output_path, DataFrame) begin

@@ -1,4 +1,4 @@
-data_dir = "../data/"
+data_dir = "../Raw_data/"
 
 base_url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/"
 
@@ -21,6 +21,6 @@ for i in eachindex(files)
     download(my_url, "data.zip")
 
     local my_file = txt_names[i]
-    run(pipeline(`unzip -p data.zip $my_file`, stdout = "$(data_dir)/temperature_precipitation_$(ids[i]).csv"))
+    run(pipeline(`unzip -p data.zip $my_file`, stdout = "$(data_dir)/DWD_temperature_precipitation_$(ids[i]).csv"))
     rm("data.zip")
 end

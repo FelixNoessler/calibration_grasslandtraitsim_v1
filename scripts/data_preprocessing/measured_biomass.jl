@@ -79,101 +79,22 @@ function core_biomass(path)
         @rsubset !isnan(:value) & !ismissing(:date)
         @rename :biomass = :value
         @transform :stat = "core"
-        @select :plotID :date :biomass :cutting_height :stat
+        @subset startswith.(:plotID, "H")
+        @select :plotID :date :biomass :cutting_height
     end
 
     return final_df
-end
-
-function sade_biomass(path)
-    datasets = ["biomass_$(y)_sade.csv" for y in [2015, 2017]]
-
-    dfs = []
-    for i in eachindex(datasets)
-        df = CSV.read(path * datasets[i], DataFrame;
-                    missingstring = ["", "NA"])
-
-        df_transformed = @chain df begin
-            @subset :treatment .== "control"
-            @transform begin
-                :plotID = convert_id.(:EpPlotID)
-                :date = Dates.Date.(:year) + Dates.Day.(:day_of_year_bm)
-                :biomass = round.(:biomass_g .* 10)
-                :cutting_height = 0.02
-            end
-            @select :plotID :date :biomass :cutting_height
-        end
-        push!(dfs, df_transformed)
-    end
-
-    final_df = vcat(dfs...)
-    @transform! final_df :stat = "sade"
-    return final_df
-end
-
-function hedgeII_biomass(path)
-    datasets = [
-        "biomass_2017_hainich_hedgeII.csv", # Hainich 2017
-        "biomass_2018_alb_hedgeII.csv"  # Alb 2018
-    ]
-    dates = [
-        Dates.Date(2017, 05, 31),
-        Dates.Date(2018, 05, 31)
-    ]
-
-    dfs = []
-    for i in eachindex(datasets)
-        df = CSV.read(path * datasets[i], DataFrame;
-                    missingstring = ["", "NA"])
-        df_transformed = @chain df begin
-            @transform begin
-                :date = dates[i]
-                :biomass = round.(:biomass .* 250)
-                :plotID = :plotname
-                :cutting_height = 0.02
-            end
-            @rsubset !ismissing(:biomass)
-            @select :plotID :date :biomass :cutting_height
-        end
-
-        disallowmissing!(df_transformed)
-
-        push!(dfs, df_transformed)
-    end
-
-    final_df = vcat(dfs...)
-    @transform! final_df :stat = "hedgeII"
-    return final_df
-end
-
-function sat_biomass(path)
-    df = CSV.read(path * "biomass_from_sentinel.csv", DataFrame)
-    @rename! df begin
-        :satellite_mean = :biomass_kg_ha
-        :satellite_min = :biomass_kg_ha_min
-        :satellite_max = :biomass_kg_ha_max
-    end
-
-    df_stack = stack(df, [:satellite_mean, :satellite_min, :satellite_max];
-                     variable_name = :stat, value_name = :biomass)
-
-    df_final = @chain df_stack begin
-        @transform :cutting_height = 0.04
-        @select :plotID :date :biomass :cutting_height :stat
-    end
-    return df_final
 end
 
 
 let
-    data_path = "../data/"
+    data_path = "../Raw_data/BE/"
 
-    df = vcat(core_biomass(data_path), sade_biomass(data_path),
-              sat_biomass(data_path), hedgeII_biomass(data_path))
+    df = core_biomass(data_path)
     df = @orderby df :plotID :date
     disallowmissing!(df)
 
-    biomass_file = "measured_biomass.csv"
+    biomass_file = "../Calibration_data/Biomass.csv"
 
     # @info "$biomass_file"
     CSV.write(biomass_file, df)

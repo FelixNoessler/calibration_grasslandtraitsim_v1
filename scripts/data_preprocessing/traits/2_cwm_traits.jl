@@ -1,15 +1,12 @@
 include("0_functions_load_traits.jl")
 
 ##### load tables
-data_path = "../data/"
-cwm_output_path = "cwm_traits.csv"
-veg_df, veg_species_df = load_veg_df(data_path)
-df_leaf = bexis_leaf_traits(data_path)
-df_root = bexis_root_traits(data_path)
+data_path = "../Raw_data/"
+veg_df, veg_species_df = load_veg_df(data_path * "BE/")
+df_leaf = bexis_leaf_traits(data_path * "BE/")
+df_root = bexis_root_traits(data_path * "BE/")
 df_try = load_lnc_try(data_path)
-df_maxheight = CSV.read(data_path * "maxheight_rothmaler.csv", DataFrame)
-@transform! df_maxheight :maxheight = :maxheight .* u"m"
-@select! df_maxheight :species :maxheight
+df_maxheight = load_maxheight(data_path)
 
 ##### create trait tables for all species in vegetation dataset
 df_bexis = @chain outerjoin(df_leaf, df_root, on = :species, makeunique = true) begin
@@ -90,7 +87,7 @@ cwm_veg_df = @chain veg_df begin
 end
 
 ##### join vegetation date
-veg_date_df = load_vegetation_date_df(data_path)
+veg_date_df = load_vegetation_date_df(data_path * "BE/")
 
 cwm_veg_df = @chain cwm_veg_df begin
     @subset 2009 .<= :year .<= 2021
@@ -106,14 +103,16 @@ cwm_veg_wo_units_df = @rtransform cwm_veg_df begin
     :maxheight = ustrip(:maxheight)
     :lnc = ustrip(:lnc)
 end
+@subset! cwm_veg_wo_units_df startswith.(:plotID, "H")
+cwm_output_path = "../Calibration_data/CWM_Traits.csv"
 CSV.write(cwm_output_path, cwm_veg_wo_units_df)
 
 ##### read file and add units
 @chain CSV.read(cwm_output_path, DataFrame) begin
     @transform begin
-        :srsa = :srsa * u"m^2 / g"
+        :rsa = :rsa * u"m^2 / g"
         :sla = :sla * u"m^2 / g"
-        :height = :height * u"m"
+        :maxheight = :maxheight * u"m"
         :lnc = :lnc * u"mg / g"
     end
 end

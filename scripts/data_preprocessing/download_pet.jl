@@ -1,4 +1,4 @@
-data_dir = "../data/"
+data_dir = "../Raw_data/"
 
 # https://opendata.dwd.de/climate_environment/CDC/derived_germany/soil/daily/historical/
 # 164 - Angermünde = SCH
@@ -12,6 +12,6 @@ ids = [
 
 for id in ids
     local url = "https://opendata.dwd.de/climate_environment/CDC/derived_germany/soil/daily/historical/derived_germany_soil_daily_historical_$(id).txt.gz"
-    filename = "pet_$(id).txt.gz"
+    filename = "DWD_PET_$(id).txt.gz"
     download(url, joinpath(data_dir, filename))
 end
