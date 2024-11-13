@@ -297,6 +297,7 @@ function load_climate(path)
         leftjoin(_, load_PET(path), on = :t)
         leftjoin(_, load_PAR(path), on = :t)
         @orderby :plotID :t
+        @transform :temperature_sum = round.(:temperature_sum, digits = 1)
         @select :temperature :temperature_sum :precipitation :PET :PAR :t :x :y :plotID
     end
     disallowmissing!(df)

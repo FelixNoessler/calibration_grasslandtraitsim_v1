@@ -54,7 +54,9 @@ df_out_wo_units = @rtransform df_out begin
     :sla = ustrip(:sla)
     :maxheight = ustrip(:maxheight)
     :lnc = ustrip(:lnc)
+    :lbp = round(0.8 * :abp, digits = 3)
 end
+@select! df_out_wo_units :species :abp :lbp :maxheight :sla :lnc :rsa :amc
 CSV.write("../Input_data/Traits.csv", df_out_wo_units)
 
 ##### read file and add units

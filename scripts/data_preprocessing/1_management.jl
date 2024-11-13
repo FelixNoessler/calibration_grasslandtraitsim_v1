@@ -389,7 +389,7 @@ function load_management(path)
         @select :LD :CUT :t :x :y :plotID
         @rtransform :LD = isnan(:LD) ? missing : round(:LD; digits = 4)
         @rtransform :CUT = isnan(:CUT) ? missing : :CUT
-        @subset .! ismissing.(:CUT) .|| .! ismissing.(:LD)
+        # @subset .! ismissing.(:CUT) .|| .! ismissing.(:LD)
         @orderby :plotID :t
     end
     return df

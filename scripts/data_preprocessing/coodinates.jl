@@ -24,6 +24,4 @@ end
 
 
 df_coord = load_coordinates("../Raw_data/BE/")
-CSV.write("approx_coordinates.csv", df_coord)
-
-# move file to Model_code_GrasslandTraitSim_v1/assets/data/input
+CSV.write("../Calibration_data/approx_coordinates.csv", df_coord)

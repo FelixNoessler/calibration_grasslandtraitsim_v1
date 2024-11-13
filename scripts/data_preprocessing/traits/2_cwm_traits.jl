@@ -65,17 +65,18 @@ function functional_dispersion(trait_vec, cover_vals;)
     return sum(z .* relative_cover)
 end
 
+
 cwm_veg_df = @chain veg_df begin
     leftjoin(veg_trait_final_df, on = :species)
     @groupby :plotID :year
     @combine begin
-        :rsa = cwm_missing(:srsa, :cover)
-        :amc = cwm_missing(:amc, :cover)
-        :abp = cwm_missing(:abp, :cover)
-        :sla = cwm_missing(:sla, :cover)
-        :maxheight = cwm_missing(:maxheight, :cover)
-        :lnc = cwm_missing(:lnc, :cover)
-        :fdis = functional_dispersion([:srsa, :amc, :abp, :sla, :maxheight, :lnc], :cover) #
+        :rsa = round(cwm_missing(:srsa, :cover); digits = 4)
+        :amc = round(cwm_missing(:amc, :cover); digits = 3)
+        :abp = round(cwm_missing(:abp, :cover); digits = 3)
+        :sla = round(cwm_missing(:sla, :cover); digits = 5)
+        :maxheight = round(cwm_missing(:maxheight, :cover); digits = 2)
+        :lnc = round(cwm_missing(:lnc, :cover); digits = 2)
+        :fdis = round(functional_dispersion([:srsa, :amc, :abp, :sla, :maxheight, :lnc], :cover); digits = 2) #
         # :srsa_quality = cwm_quality(:srsa, :cover)
         # :amc_quality = cwm_quality(:amc, :cover)
         # :abp_quality = cwm_quality(:abp, :cover)
@@ -92,6 +93,7 @@ veg_date_df = load_vegetation_date_df(data_path * "BE/")
 cwm_veg_df = @chain cwm_veg_df begin
     @subset 2009 .<= :year .<= 2021
     leftjoin(veg_date_df, on = [:year, :plotID])
+    @transform :numeric_date = round.(:numeric_date, digits = 5)
 end
 disallowmissing!(cwm_veg_df)
 

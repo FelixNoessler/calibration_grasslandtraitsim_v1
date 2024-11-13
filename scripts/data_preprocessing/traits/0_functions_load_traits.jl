@@ -4,6 +4,9 @@ using Statistics
 using RCall
 import CSV
 import Dates
+import Base
+
+Base.round(x::Quantity; digits) = round(typeof(x), x; digits)
 
 function mean_missing(x1, x2)
     if ismissing(x1)

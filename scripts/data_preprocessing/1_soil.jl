@@ -79,7 +79,7 @@ function load_soil(path)
         @transform :bulk = coalesce.(:bulk, mean(:bulk[.!ismissing.(:bulk)]))
         @transform :bulk = round.(:bulk, digits = 2)
         @transform :root_depth = coalesce.(:root_depth, :median_root_depth) * 10
-        @transform :organic = round.(:Organic_C / 1000 * 100; digits = 2)
+        @transform :organic = round.(:Organic_C / 1000; digits = 2)
         @rtransform :plotID = convert_id(:EP_Plotid)
         @orderby :plotID
         @rename begin
