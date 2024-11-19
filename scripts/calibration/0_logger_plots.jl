@@ -1,66 +1,3 @@
-function get_mowing(nmowing, date, ntimesteps)
-    ################## mowing
-    mheight = 0.05u"m"
-    mowing = if nmowing == 0
-        mowing_none = fill(NaN * u"m", ntimesteps)
-    elseif nmowing == 1
-        mowing_dates = Dates.Date.(2006:2021, 7, 1)
-        mowing_one = fill(NaN * u"m", ntimesteps)
-        [mowing_one[d .== date] .= mheight for d in mowing_dates]
-        mowing_one
-    elseif nmowing == 2
-        mowing_dates = vcat(Dates.Date.(2006:2021, 5, 1), Dates.Date.(2006:2021, 9, 1))
-        mowing_two = fill(NaN * u"m", ntimesteps)
-        [mowing_two[d .== date] .= mheight for d in mowing_dates]
-        mowing_two
-    elseif nmowing == 3
-        mowing_dates = vcat(Dates.Date.(2006:2021, 5, 1), Dates.Date.(2006:2021, 7, 1),
-                            Dates.Date.(2006:2021, 9, 1))
-        mowing_three = fill(NaN * u"m", ntimesteps)
-        [mowing_three[d .== date] .= mheight for d in mowing_dates]
-        mowing_three
-    elseif nmowing == 4
-        mowing_dates = vcat(Dates.Date.(2006:2021, 5, 1), Dates.Date.(2006:2021, 6, 10),
-                            Dates.Date.(2006:2021, 7, 20), Dates.Date.(2006:2021, 9, 1))
-        mowing_four = fill(NaN * u"m", ntimesteps)
-        [mowing_four[d .== date] .= mheight for d in mowing_dates]
-        mowing_four
-    elseif nmowing == 5
-        mowing_dates = vcat(Dates.Date.(2006:2021, 5, 1), Dates.Date.(2006:2021, 6, 1),
-                            Dates.Date.(2006:2021, 7, 1), Dates.Date.(2006:2021, 8, 1),
-                            Dates.Date.(2006:2021, 9, 1))
-        mowing_five = fill(NaN * u"m", ntimesteps)
-        [mowing_five[d .== date] .= mheight for d in mowing_dates]
-        mowing_five
-    end
-
-end
-
-function standing_biomass_mowing(p, opt_obj, plotID, dir; iteration)
-    tot_biomass = []
-    for nmowing in 1:5
-        trait_input = sim.input_traits();
-        input_obj = opt_obj.input_data[plotID]
-        date = input_obj.simp.mean_input_date
-        ntimesteps = input_obj.simp.ntimesteps
-        @reset input_obj.input.CUT_mowing = get_mowing(nmowing, date, ntimesteps)
-        @reset input_obj.input.LD_grazing .= NaN / u"ha"
-        sol = sim.solve_prob(; input_obj, p, trait_input);
-        species_biomass = dropdims(mean(sol.output.biomass; dims = (:x, :y)); dims = (:x, :y))
-        total_biomass = vec(sum(species_biomass; dims = :species))
-        push!(tot_biomass, mean(total_biomass))
-    end
-
-    fig, _ = scatter(1:5, ustrip.(tot_biomass),
-                     axis = (; xlabel = "Number of mowing events",
-                               ylabel = "Mean total biomass [kg ha⁻¹]"))
-
-    # display(fig)
-    save("$dir/mowing_$iteration.png", fig)
-    return nothing
-end
-
-
 function calibration_logplot(p, opt_obj, site_index, dir; iteration = "")
     @unpack trait_input, parameter_names, input_data, measurement_data = opt_obj
 
@@ -80,13 +17,15 @@ function calibration_logplot(p, opt_obj, site_index, dir; iteration = "")
         data = measurement_data[site]
         sol = sim.solve_prob(; input_obj, p, trait_input)
         num_t = sol.simp.output_date_num
-        trait_num_t = num_t[LookupArrays.index(data.traits, :time)]
+
+        biomass_dates = LookupArrays.index(data.Cut_biomass, :t)
+        biomass_dates_num = sim.to_numeric.(biomass_dates)
+
         errors = error_for_one_site(; p, input_obj, trait_input, data)
 
         total_biomass = sum(sol.output.above_biomass[:, 1, 1, :]; dims = :species)
-        biomass_date = sol.valid.biomass_cutting_numeric_date[sol.valid.cut_index]
-        simulated_cut_biomass = ustrip.(sol.valid.cut_biomass)[sol.valid.cut_index]
-        measured_cut_biomass = vec(data.biomass)
+        simulated_cut_biomass = calc_cut_biomass(sol, data);
+        measured_cut_biomass = vec(data.Cut_biomass.biomass)
 
         ax = Axis(fig[1, s];
             ylabel = s == 1 ? "Total aboveground\nbiomass [kg ha⁻¹]" : "",
@@ -99,8 +38,8 @@ function calibration_logplot(p, opt_obj, site_index, dir; iteration = "")
 
         push!(biomass_ax, ax)
         lines!(sol.simp.output_date_num, vec(ustrip.(total_biomass)))
-        scatter!(biomass_date, simulated_cut_biomass)
-        scatter!(biomass_date, measured_cut_biomass; color = :black)
+        scatter!(biomass_dates_num, ustrip.(simulated_cut_biomass))
+        scatter!(biomass_dates_num, ustrip.(measured_cut_biomass); color = :black)
         Label(fig[1, s], "$(Int(round(errors[1]; digits = 0)))";
             padding = (0,5,0,0), justification = :right,
             halign = :right, valign = :top)
@@ -120,8 +59,10 @@ function calibration_logplot(p, opt_obj, site_index, dir; iteration = "")
 
         trait_labels = (; zip(trait_symbols, trait_strings)...)
 
-        data_trait_t = LookupArrays.index(data.traits, :time)
-        species_biomass = dropdims(mean(@view sol.output.biomass[data_trait_t, :, :, :];
+        trait_dates = LookupArrays.index(data.CWM_traits, :t)
+        trait_dates_num = sim.to_numeric.(trait_dates)
+
+        species_biomass = dropdims(mean(@view sol.output.biomass[time = At(trait_dates)];
                                         dims = (:x, :y)); dims = (:x, :y))
         species_biomass = ustrip.(species_biomass)
         site_biomass = vec(sum(species_biomass; dims = (:species)))
@@ -147,7 +88,7 @@ function calibration_logplot(p, opt_obj, site_index, dir; iteration = "")
             sim_cwm_trait_all = vec(sum(weighted_trait_all; dims = 1))
 
             ## calculated cwm from observed vegetation
-            measured_cwm = vec(data.traits[trait = At(trait_symbol)])
+            measured_cwm = vec(data.CWM_traits[trait_symbol])
 
             ## trait input
             input_trait_vals = ustrip.(trait_input[trait_symbol])
@@ -168,7 +109,7 @@ function calibration_logplot(p, opt_obj, site_index, dir; iteration = "")
             hlines!(input_trait_vals; color = (:black, 0.07))
 
             lines!(num_t, sim_cwm_trait_all)
-            scatter!(trait_num_t, measured_cwm; color = :black)
+            scatter!(trait_dates_num, ustrip.(measured_cwm); color = :black)
 
             trait_err_digits = i == 6 ? 1 : 3
             Label(fig[1+i, s], "$(round(errors[i+1]; digits = trait_err_digits))";

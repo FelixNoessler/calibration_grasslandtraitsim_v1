@@ -395,7 +395,6 @@ function load_vegetation_date_df(path)
 
         unique!(df, :plotID)
 
-        # @show length(unique(df.plotID))
         push!(dfs, df)
     end
     date_df = vcat(dfs...)

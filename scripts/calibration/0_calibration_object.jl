@@ -1,10 +1,11 @@
 import GrasslandTraitSim as sim
+import CSV
 using Unitful
 using UnPack
 using Statistics
 using DataFrames, DataFramesMeta
 
-struct BE_optimization{T1, T2, T3, T4, T5, T6}
+struct BE_optimization{T1, T2, T3, T4, T5}
     parameter_names::Vector{String}
     lb::Vector{Float64}
     ub::Vector{Float64}
@@ -20,7 +21,6 @@ struct BE_optimization{T1, T2, T3, T4, T5, T6}
     trait_input::T4
 
     cache::T5
-    cache_site_specific::T6
 end
 
 function Base.show(io::IO, be_opt::BE_optimization)
@@ -29,10 +29,7 @@ function Base.show(io::IO, be_opt::BE_optimization)
 end
 
 function BE_optimization(; all_sites = false)
-    biomass_stats = ["core"]
 
-    ## trait data of species
-    trait_input = sim.input_traits()
 
     ## site code
     BE_IDs = ["$(explo)$(lpad(i, 2, "0"))" for i in 1:50 for explo in ["HEG"]]
@@ -94,7 +91,10 @@ function BE_optimization(; all_sites = false)
     BE_IDs = BE_IDs[plot_filter]
 
     ## sort sites from north to south
-    df_coord = sim.data.input.coord
+    df_coord = CSV.read(
+        joinpath("../Calibration_data", "approx_coordinates.csv"),
+        DataFrame)
+
     @subset! df_coord startswith.(:plotID, "H")
     lat = df_coord.Latitude[plot_filter]
     lat_order = sortperm(lat, rev = true)
@@ -111,21 +111,28 @@ function BE_optimization(; all_sites = false)
         site_ids = BE_IDs
     end
 
+    ## trait data of species
+    sim.load_traits("../Input_data/")
+    trait_input = sim.input_traits()
+
     ## input data
-    input_data = sim.validation_input_plots(;
-        plotIDs = site_ids,
-        nspecies = length(trait_input.sla),
-        biomass_stats);
+    sim.load_input_data("../Input_data/")
+    input_dict = Dict()
+    for k in Symbol.(site_ids)
+        input_dict[k] = sim.validation_input(k;
+            use_height_layers = true,
+            nspecies = nothing, trait_seed = missing,
+            initbiomass = 5000.0u"kg/ha",
+            initsoilwater = 100.0u"mm")
+    end
+    input_data = NamedTuple(input_dict)
 
     ## measurements
-    data = sim.get_validation_data_plots(;
-        plotIDs = site_ids,
-        biomass_stats,
-        mean_input_date = input_data[Symbol(site_ids[1])].simp.mean_input_date)
+    sim.load_measured_data("../Calibration_data/")
+    data = NamedTuple{Tuple(Symbol.(site_ids))}(sim.measured_data)
 
     ## cache object for faster computation
     preallocs = sim.PreallocCache()
-    preallocs_specific = sim.PreallocPlotCache(length(site_ids))
 
     ## which parameters to optimize
     parameter_optim = [
@@ -218,5 +225,5 @@ function BE_optimization(; all_sites = false)
     BE_optimization(parameter_names, lb, ub, p_fixed,
                     BE_IDs, BE_IDs_train, BE_IDs_test,
                     input_data, data, trait_input,
-                    preallocs, preallocs_specific)
+                    preallocs)
 end

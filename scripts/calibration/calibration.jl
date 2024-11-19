@@ -17,6 +17,7 @@ using JLD2
 includet("0_error_functions.jl")
 includet("0_calibration_object.jl")
 includet("0_logger_plots.jl")
+includet("0_plot_functions.jl")
 
 function run_optimization(opt_obj, function_calls = 200, time_limit_seconds = Inf;
                           X0 = nothing, tmp_location = "")
@@ -43,19 +44,18 @@ function run_optimization(opt_obj, function_calls = 200, time_limit_seconds = In
         fx, gx, hx
     end
 
-    algo = NSGA2(; options, N = 10 * length(opt_obj.lb))
+    algo = NSGA2(; options, N = 20) #10 * length(opt_obj.lb)
     if !isnothing(X0)
         set_user_solutions!(algo, X0, f);
     end
 
     logger(st) = begin
-        if iszero(st.iteration % 5)
+        if iszero(st.iteration % 1)
             p = solution(st, opt_obj)
             print(p)
             iteration_str = lpad(st.iteration, 4, "0")
             calibration_logplot(p, opt_obj, [:HEG05, :HEG06], tmp_location,
                                 iteration = iteration_str)
-            standing_biomass_mowing(p, opt_obj, :HEG05, tmp_location; iteration = iteration_str)
             jldsave("$tmp_location/opt_$iteration_str.jld2"; opt=st)
         end
     end
