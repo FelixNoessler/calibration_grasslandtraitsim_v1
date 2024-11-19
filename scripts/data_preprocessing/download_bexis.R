@@ -4,7 +4,6 @@ library(rBExIS)
 library(readr)
 
 download_bexis_dataset <- function(id, name, output_dir){
-    dir.create("data/", showWarnings = FALSE)
     api_url <- rBExIS:::get_api_url("/data/")
     table_data <- content(rBExIS:::get_response("GET", paste0(api_url, id)))
     write_csv(table_data, paste0(output_dir, name, ".csv"))
@@ -26,14 +25,6 @@ download_bexis_dataset(id = 25086, name = "LUI_tool_input", output_dir = data_di
 download_bexis_dataset(id = 16209, name = "biomass_2009", output_dir = data_dir)
 download_bexis_dataset(id = 12706, name = "biomass_2010", output_dir = data_dir)
 download_bexis_dataset(id = 14346, name = "biomass_2011", output_dir = data_dir)
-
-## cut biomass (sade)
-download_bexis_dataset(id = 19812, name = "biomass_2015_sade", output_dir = data_dir)
-download_bexis_dataset(id = 23506, name = "biomass_2017_sade", output_dir = data_dir)
-
-## cut biomass (hedge II)
-download_bexis_dataset(id = 31138, name = "biomass_2017_hainich_hedgeII", output_dir = data_dir)
-download_bexis_dataset(id = 31139, name = "biomass_2018_alb_hedgeII", output_dir = data_dir)
 
 ## vegetation
 download_bexis_dataset(id = 31389, name = "vegetation_2008_2022", output_dir = data_dir)

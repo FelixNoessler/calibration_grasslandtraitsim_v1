@@ -49,7 +49,7 @@ The following yaml file shows which options were used for downloading:
 :::
 
 ::: {.callout-note title="Data sources for the species traits" collapse=true}
-Parts of the traits data were download from BExIS from traits that were measured from plants in the field (specific leaf area, @explo24807v2) or in lab conditions (belowground traits, aboveground biomass per total biomass, @explo26546v2). The potential plant height was taken from the LEDA trait database (@LEDA). The leaf nitrogen content was downloaded from the TRY database (@trydb).
+Parts of the traits data were download from BExIS from traits that were measured from plants in the field (specific leaf area, @explo24807v2) or in lab conditions (belowground traits, aboveground biomass per total biomass, @explo26546v2). The maximum plant height was taken from the Rothmaler Atlasband (@rothmaler_atlasband). The leaf nitrogen content was downloaded from the TRY database (@trydb).
 :::
 
 
@@ -58,15 +58,15 @@ Parts of the traits data were download from BExIS from traits that were measured
 
 ### Traits of species
 
-| Description                                      | Data source       |
-| ------------------------------------------------ | ----------------- |
-| Specific leaf area [m² g⁻¹]                      | @explo24807v2     |
-| Arbuscular mycorrhizal colonisation [-]          | @explo26546v2     |
-| Root surface area / aboveground biomass [m² g⁻¹] | @explo26546v2     |
-| Above ground biomass per total biomass (abp) [-] | @explo26546v2     |
-| The leaf biomass per aboveground biomass [-]     | set to 0.8 of abp |
-| Potential plant height [m]                       | @LEDA             |
-| Leaf nitrogen / leaf mass [mg g⁻¹]               | @trydb            |
+| Description                                      | Data source          |
+| ------------------------------------------------ | -------------------- |
+| Specific leaf area [m² g⁻¹]                      | @explo24807v2        |
+| Arbuscular mycorrhizal colonisation [-]          | @explo26546v2        |
+| Root surface area / aboveground biomass [m² g⁻¹] | @explo26546v2        |
+| Above ground biomass per total biomass (abp) [-] | @explo26546v2        |
+| The leaf biomass per aboveground biomass [-]     | set to 0.8 of abp    |
+| Maximum plant height [m]                         | @rothmaler_atlasband |
+| Leaf nitrogen / leaf mass [mg g⁻¹]               | @trydb               |
 
 : {tbl-colwidths="[60,40]"}
 
@@ -397,7 +397,7 @@ The functions for loading the trait data are described in the following script:
 | Specific leaf area [m² g⁻¹]                      | @explo24807v2                                   |
 | Arbuscular mycorrhizal colonisation [-]          | @explo26546v2                                   |
 | Root surface area / belowground biomass [m² g⁻¹] | @explo26546v2                                   |
-| Potential plant height [m]                       | @LEDA                                           |
+| Maximum plant height [m]                         | @rothmaler_atlasband                            |
 | Leaf nitrogen / leaf mass [mg g⁻¹]               | @trydb                                          |
 | Aboveground biomass / total biomass [-]          | @explo26546v2                                   |
 
